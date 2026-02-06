@@ -58,18 +58,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseRouting();
 app.UseCors();
 app.UseAuthorization();
-app.UseResponseCaching(); 
+app.UseResponseCaching();
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-    // Add this for SPA fallback
-    endpoints.MapFallbackToFile("index.html");
-});
+
+app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.Run();

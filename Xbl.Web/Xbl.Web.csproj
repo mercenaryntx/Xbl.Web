@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <SpaRoot>ClientApp\</SpaRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,19 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Xbl\Xbl.Client\Xbl.Client.csproj" />
     <ProjectReference Include="..\Xbl.Web.Shared\Xbl.Web.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Include ClientApp files in project but exclude from build output -->
+    <Content Remove="$(SpaRoot)**" />
+    <None Remove="$(SpaRoot)**" />
+    <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**;$(SpaRoot)build\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ensure the ClientApp folder structure is visible in Solution Explorer -->
+    <Folder Include="ClientApp\src\" />
+    <Folder Include="ClientApp\public\" />
   </ItemGroup>
 
 </Project>

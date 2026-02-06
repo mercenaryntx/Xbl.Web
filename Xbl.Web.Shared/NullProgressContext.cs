@@ -1,7 +1,7 @@
 using Spectre.Console;
 using Xbl.Client.Infrastructure;
 
-namespace Xbl.Web;
+namespace Xbl.Web.Shared;
 
 public class NullProgressContext : IProgressContext
 {

@@ -37,11 +37,9 @@ public class TitlesController : ControllerBase
         [FromKeyedServices(DataSource.Live)] IDatabaseContext live, 
         [FromKeyedServices(DataSource.Xbox360)] IDatabaseContext x360, 
         IMapper mapper,
-        IXblClient xbl,
         ILogger<TitlesController> logger)
     {
         _mapper = mapper;
-        _xbl = xbl;
         _logger = logger;
         _live = live.Mandatory();
         _x360 = x360.Mandatory();
@@ -106,15 +104,6 @@ public class TitlesController : ControllerBase
             t.Minutes = s?.IntValue;
         }
         return t;
-    }
-
-    [HttpPost("update")]
-    public async Task<IActionResult> Update()
-    {
-        await _xbl.Update();
-        var lastUpdate = await _live.Query<DateTime>("SELECT json_extract(Data, '$.titleHistory.lastTimePlayed') FROM title ORDER BY json_extract(Data, '$.titleHistory.lastTimePlayed') DESC LIMIT 1");
-        Response.Headers[LastUpdateHeader] = lastUpdate.Single().ToString("o");
-        return NoContent();
     }
 
     [HttpOptions]

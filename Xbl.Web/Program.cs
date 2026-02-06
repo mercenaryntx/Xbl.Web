@@ -3,7 +3,7 @@ using Xbl.Client;
 using Xbl.Client.Io;
 using Xbl.Data;
 using Xbl.Data.Extensions;
-using Xbl.Web;
+using Xbl.Web.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = new MapperConfiguration(cfg =>

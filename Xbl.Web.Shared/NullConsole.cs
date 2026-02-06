@@ -1,13 +1,21 @@
 using KustoLoco.Core;
+using Microsoft.Extensions.Logging;
 using Spectre.Console.Rendering;
 using Xbl.Client.Infrastructure;
 using Xbl.Client.Io;
 using Xbl.Client.Models;
 
-namespace Xbl.Web;
+namespace Xbl.Web.Shared;
 
 public class NullConsole : IConsole
 {
+    private readonly ILogger<NullConsole> _logger;
+
+    public NullConsole(ILogger<NullConsole> logger)
+    {
+        _logger = logger;
+    }
+
     public void Render(ProfilesSummary summary)
     {
     }
@@ -54,7 +62,8 @@ public class NullConsole : IConsole
 
     public int ShowError(string error)
     {
-        return 0;
+        _logger.LogError(error);
+        return -1;
     }
 
     public void Write(IRenderable table)

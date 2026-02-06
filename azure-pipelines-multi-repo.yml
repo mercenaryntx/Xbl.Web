@@ -177,6 +177,6 @@ stages:
             inputs:
               azureSubscription: 'Visual Studio Enterprise(edecda7b-57b5-41b5-845a-33e9333d4186)'
               appType: 'functionApp'
-              appName: 'xbl-function-app'  # TODO: Update with your Azure Function App name
+              appName: 'xblfunc'
               package: '$(Pipeline.Workspace)/xbl-function/XblFunction.zip'
               deploymentMethod: 'zipDeploy'

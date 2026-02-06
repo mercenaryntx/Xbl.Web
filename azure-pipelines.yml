@@ -18,8 +18,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  xblWebOutputDir: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web'
-  xblFunctionOutputDir: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Function'
+  publishDir: '$(Build.ArtifactStagingDirectory)/publish'
   reactBuildDir: 'Xbl.Web/ClientApp/build'
 
 stages:
@@ -87,7 +86,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/Xbl.Web.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(xblWebOutputDir) --no-restore'
+        arguments: '--configuration $(buildConfiguration) --output $(publishDir) --no-restore'
         zipAfterPublish: false
     
     # Step 7: Publish Xbl.Function
@@ -97,14 +96,14 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Function/Xbl.Function.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(xblFunctionOutputDir) --no-restore'
+        arguments: '--configuration $(buildConfiguration) --output $(publishDir) --no-restore'
         zipAfterPublish: false
     
     # Step 8: Archive Xbl.Web deployment package
     - task: ArchiveFiles@2
       displayName: 'Archive Xbl.Web deployment package'
       inputs:
-        rootFolderOrFile: '$(xblWebOutputDir)'
+        rootFolderOrFile: '$(publishDir)/Xbl.Web'
         includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
@@ -114,7 +113,7 @@ stages:
     - task: ArchiveFiles@2
       displayName: 'Archive Xbl.Function deployment package'
       inputs:
-        rootFolderOrFile: '$(xblFunctionOutputDir)'
+        rootFolderOrFile: '$(publishDir)/Xbl.Function'
         includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/XblFunction.zip'

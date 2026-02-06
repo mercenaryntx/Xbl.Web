@@ -52,12 +52,7 @@ stages:
       displayName: 'Restore NuGet packages'
       inputs:
         command: 'restore'
-        projects: |
-          $(Build.SourcesDirectory)/Xbl/Xbl.Client/Xbl.Client.csproj
-          $(Build.SourcesDirectory)/Xbl/Xbl.Data/Xbl.Data.csproj
-          $(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/Xbl.Web.csproj
-          $(Build.SourcesDirectory)/Xbl.Web/Xbl.Function/Xbl.Function.csproj
-          $(Build.SourcesDirectory)/Xbl.Web/Xbl.Web.Shared/Xbl.Web.Shared.csproj
+        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.sln'
         feedsToUse: 'select'
     
     # Step 4: Build React App

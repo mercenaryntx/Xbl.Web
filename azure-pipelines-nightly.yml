@@ -20,37 +20,23 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-buildConfiguration: 'Release'
-publishDir: '$(Build.ArtifactStagingDirectory)/publish'
-reactBuildDir: 'Xbl.Web/ClientApp/build'
-keyVaultName: 'xbl-keyvault'  # Update with your Key Vault name
+  buildConfiguration: 'Release'
+  publishDir: '$(Build.ArtifactStagingDirectory)/publish'
+  reactBuildDir: 'Xbl.Web/ClientApp/build'
+  keyVaultName: 'xbl-keyvault'
 
 stages:
-- stage: Update
-  displayName: 'Update Xbox Live Data'
+- stage: BuildAndDeploy
+  displayName: 'Update Data, Build and Deploy'
   jobs:
-  - job: UpdateJob
-    displayName: 'Run Xbl.Web.Update'
+  - job: UpdateAndBuild
+    displayName: 'Update Xbox Live Data & Build Xbl.Web'
     steps:
     
     # Step 1: Checkout repositories
     - template: pipeline-templates/checkout-repos.yml
     
-    # Step 2: Restore NuGet packages
-    - template: pipeline-templates/dotnet-restore.yml
-    
-    # Step 3: Build Xbl.Web.Update
-    - task: DotNetCoreCLI@2
-      displayName: 'Build Xbl.Web.Update'
-      inputs:
-        command: 'build'
-        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web.Update/Xbl.Web.Update.csproj'
-        arguments: '--configuration $(buildConfiguration) --no-restore'
-    
-    # Step 4: Download live.db from Azure Blob Storage
-    - template: pipeline-templates/download-database.yml
-    
-    # Step 5: Get secrets from Azure Key Vault
+    # Step 2: Get secrets from Azure Key Vault
     - task: AzureKeyVault@2
       displayName: 'Get secrets from Key Vault'
       inputs:
@@ -59,7 +45,21 @@ stages:
         SecretsFilter: 'OpenXblApiKey,AzureStorageConnectionString'
         RunAsPreJob: false
     
-    # Step 6: Run Xbl.Web.Update with arguments
+    # Step 3: Restore NuGet packages
+    - template: pipeline-templates/dotnet-restore.yml
+    
+    # Step 4: Build Xbl.Web.Update
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Xbl.Web.Update'
+      inputs:
+        command: 'build'
+        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web.Update/Xbl.Web.Update.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+    
+    # Step 5: Download live.db from Azure Blob Storage
+    - template: pipeline-templates/download-database.yml
+    
+    # Step 6: Run Xbl.Web.Update to update Xbox Live data
     - task: PowerShell@2
       displayName: 'Run Xbl.Web.Update'
       inputs:
@@ -102,40 +102,28 @@ stages:
         OPENXBLAPIKEY: $(OpenXblApiKey)
         AZURESTORAGECONNECTIONSTRING: $(AzureStorageConnectionString)
     
-    # Step 7: Upload live.db back to Azure Blob Storage
+    # Step 7: Upload updated live.db back to Azure Blob Storage
     - template: pipeline-templates/upload-database.yml
-
-- stage: Build
-  displayName: 'Build and Package'
-  dependsOn: Update
-  condition: succeeded()
-  jobs:
-  - job: BuildJob
-    displayName: 'Build Xbl.Web'
-    steps:
     
-    # Step 1: Checkout repositories
-    - template: pipeline-templates/checkout-repos.yml
-    
-    # Step 2: Restore NuGet packages
-    - template: pipeline-templates/dotnet-restore.yml
-    
-    # Step 3: Build React App
+    # Step 8: Build React App
     - template: pipeline-templates/react-build.yml
     
-    # Step 4: Download live.db from Azure Blob Storage
-    - template: pipeline-templates/download-database.yml
-    
-    # Step 5: Build and publish Xbl.Web
+    # Step 9: Build and publish Xbl.Web (creates the publish directory)
     - template: pipeline-templates/build-and-publish-web.yml
-
-- stage: Deploy
-  displayName: 'Deploy to Azure'
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
+    
+    # Step 10: Copy updated live.db to publish directory
+    - task: CopyFiles@2
+      displayName: 'Copy updated live.db to publish directory'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/data'
+        Contents: 'live.db'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web/data'
+  
+  # Deployment job - depends on build completing
   - deployment: DeployWebApp
     displayName: 'Deploy Xbl.Web to Azure Web App'
+    dependsOn: UpdateAndBuild
+    condition: succeeded()
     environment: 'Production'
     strategy:
       runOnce:

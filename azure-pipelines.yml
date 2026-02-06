@@ -33,11 +33,9 @@ stages:
     # Step 1: Checkout both repositories
     - checkout: self
       displayName: 'Checkout Xbl.Web repository'
-      path: Xbl.Web
     
     - checkout: XblRepo
       displayName: 'Checkout Xbl repository'
-      path: Xbl
     
     # Step 2: Install .NET SDK
     - task: UseDotNet@2
@@ -46,6 +44,14 @@ stages:
         packageType: 'sdk'
         version: '8.x'
         installationPath: $(Agent.ToolsDirectory)/dotnet
+    
+    # Step 3: Restore NuGet packages
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet packages'
+      inputs:
+        command: 'restore'
+        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.sln'
+        feedsToUse: 'select'
     
     # Step 4: Build React App
     - task: NodeTool@0
@@ -81,7 +87,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/Xbl.Web.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(xblWebOutputDir)'
+        arguments: '--configuration $(buildConfiguration) --output $(xblWebOutputDir) --no-restore'
         zipAfterPublish: false
     
     # Step 7: Publish Xbl.Function
@@ -91,7 +97,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Function/Xbl.Function.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(xblFunctionOutputDir)'
+        arguments: '--configuration $(buildConfiguration) --output $(xblFunctionOutputDir) --no-restore'
         zipAfterPublish: false
     
     # Step 8: Archive Xbl.Web deployment package

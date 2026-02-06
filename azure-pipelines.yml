@@ -11,7 +11,7 @@ resources:
     type: github
     name: mercenaryntx/Xbl
     ref: main
-    endpoint: github  # Replace with your GitHub service connection name
+    endpoint: mercenaryntx
 
 pool:
   vmImage: 'windows-latest'

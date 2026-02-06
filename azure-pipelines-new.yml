@@ -1,0 +1,171 @@
+trigger:
+  branches:
+    include:
+      - main
+      - master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  xblWebOutputDir: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web'
+  xblFunctionOutputDir: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Function'
+  reactBuildDir: 'Xbl.Web/ClientApp/build'
+  xblRepoUrl: 'https://github.com/mercenaryntx/Xbl.git'
+  xblRepoPath: '$(Agent.TempDirectory)/Xbl'
+
+stages:
+- stage: Build
+  displayName: 'Build and Package'
+  jobs:
+  - job: BuildJob
+    displayName: 'Build Xbl.Web and Xbl.Function'
+    steps:
+    
+    # Step 1: Clone the Xbl repository (dependency)
+    - checkout: self
+      displayName: 'Checkout Xbl.Web repository'
+    
+    - script: |
+        git clone $(xblRepoUrl) $(xblRepoPath)
+      displayName: 'Clone Xbl repository'
+    
+    # Step 2: Install .NET SDK
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '8.x'
+        installationPath: $(Agent.ToolsDirectory)/dotnet
+    
+    # Step 3: Restore NuGet packages (with Xbl dependency)
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet packages'
+      inputs:
+        command: 'restore'
+        projects: |
+          Xbl.Web/Xbl.Web.csproj
+          Xbl.Function/Xbl.Function.csproj
+        feedsToUse: 'select'
+    
+    # Step 4: Build React App
+    - task: NodeTool@0
+      displayName: 'Install Node.js'
+      inputs:
+        versionSpec: '20.x'
+    
+    - task: Npm@1
+      inputs:
+        command: 'install'
+        workingDir: 'Xbl.Web/ClientApp'
+      displayName: 'npm install - React App'
+    
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        workingDir: 'Xbl.Web/ClientApp'
+        customCommand: 'run build'
+      displayName: 'npm run build - React App'
+    
+    # Step 5: Copy React build to wwwroot
+    - task: CopyFiles@2
+      displayName: 'Copy React build to wwwroot'
+      inputs:
+        SourceFolder: '$(reactBuildDir)'
+        Contents: '**'
+        TargetFolder: 'Xbl.Web/wwwroot'
+    
+    # Step 6: Publish Xbl.Web
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Xbl.Web'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'Xbl.Web/Xbl.Web.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(xblWebOutputDir) --no-restore'
+        zipAfterPublish: false
+    
+    # Step 7: Publish Xbl.Function
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Xbl.Function'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'Xbl.Function/Xbl.Function.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(xblFunctionOutputDir) --no-restore'
+        zipAfterPublish: false
+    
+    # Step 8: Archive Xbl.Web deployment package
+    - task: ArchiveFiles@2
+      displayName: 'Archive Xbl.Web deployment package'
+      inputs:
+        rootFolderOrFile: '$(xblWebOutputDir)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
+        replaceExistingArchive: true
+    
+    # Step 9: Archive Xbl.Function deployment package
+    - task: ArchiveFiles@2
+      displayName: 'Archive Xbl.Function deployment package'
+      inputs:
+        rootFolderOrFile: '$(xblFunctionOutputDir)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/XblFunction.zip'
+        replaceExistingArchive: true
+    
+    # Step 10: Publish build artifacts
+    - publish: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
+      displayName: 'Publish Xbl.Web Artifact'
+      artifact: 'xbl-web'
+    
+    - publish: '$(Build.ArtifactStagingDirectory)/XblFunction.zip'
+      displayName: 'Publish Xbl.Function Artifact'
+      artifact: 'xbl-function'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployWebApp
+    displayName: 'Deploy Xbl.Web to Azure Web App'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: 'xbl-web'
+            displayName: 'Download Xbl.Web Artifact'
+          
+          - task: AzureWebApp@1
+            displayName: 'Deploy Xbl.Web to Azure Web App'
+            inputs:
+              azureSubscription: 'Visual Studio Enterprise(edecda7b-57b5-41b5-845a-33e9333d4186)'
+              appType: 'webApp'
+              appName: 'xbl'
+              package: '$(Pipeline.Workspace)/xbl-web/XblWebApp.zip'
+              deploymentMethod: 'zipDeploy'
+  
+  - deployment: DeployFunction
+    displayName: 'Deploy Xbl.Function to Azure Functions'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: 'xbl-function'
+            displayName: 'Download Xbl.Function Artifact'
+          
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy Xbl.Function to Azure Functions'
+            inputs:
+              azureSubscription: 'Visual Studio Enterprise(edecda7b-57b5-41b5-845a-33e9333d4186)'
+              appType: 'functionApp'
+              appName: 'xbl-function-app'  # Update with your Azure Function App name
+              package: '$(Pipeline.Workspace)/xbl-function/XblFunction.zip'
+              deploymentMethod: 'zipDeploy'

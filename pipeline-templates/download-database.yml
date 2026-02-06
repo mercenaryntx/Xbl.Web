@@ -1,0 +1,49 @@
+parameters:
+- name: containerName
+  type: string
+  default: 'data'
+- name: blobName
+  type: string
+  default: 'live.db'
+- name: targetFolder
+  type: string
+  default: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/data'
+
+steps:
+- task: PowerShell@2
+  displayName: 'Download live.db from Azure Blob Storage'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $connectionString = $env:AZURESTORAGECONNECTIONSTRING
+      
+      if ([string]::IsNullOrWhiteSpace($connectionString)) {
+        Write-Error "Azure Storage Connection String not found in environment variables"
+        exit 1
+      }
+      
+      Write-Host "Creating target directory: ${{ parameters.targetFolder }}"
+      New-Item -ItemType Directory -Force -Path "${{ parameters.targetFolder }}" | Out-Null
+      
+      Write-Host "Downloading ${{ parameters.blobName }} from container ${{ parameters.containerName }}"
+      
+      try {
+        az storage blob download `
+          --connection-string $connectionString `
+          --container-name "${{ parameters.containerName }}" `
+          --name "${{ parameters.blobName }}" `
+          --file "${{ parameters.targetFolder }}/${{ parameters.blobName }}"
+        
+        if (Test-Path "${{ parameters.targetFolder }}/${{ parameters.blobName }}") {
+          Write-Host "Successfully downloaded ${{ parameters.blobName }}"
+        } else {
+          Write-Error "Failed to download ${{ parameters.blobName }}"
+          exit 1
+        }
+      }
+      catch {
+        Write-Error "Error downloading blob: $_"
+        exit 1
+      }
+  env:
+    AZURESTORAGECONNECTIONSTRING: $(AzureStorageConnectionString)

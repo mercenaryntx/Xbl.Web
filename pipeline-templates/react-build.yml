@@ -1,0 +1,23 @@
+parameters:
+- name: workingDirectory
+  type: string
+  default: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/ClientApp'
+
+steps:
+- task: NodeTool@0
+  displayName: 'Install Node.js'
+  inputs:
+    versionSpec: '20.x'
+
+- task: Npm@1
+  displayName: 'npm install - React App'
+  inputs:
+    command: 'install'
+    workingDir: '${{ parameters.workingDirectory }}'
+
+- task: Npm@1
+  displayName: 'npm run build - React App'
+  inputs:
+    command: 'custom'
+    workingDir: '${{ parameters.workingDirectory }}'
+    customCommand: 'run build'

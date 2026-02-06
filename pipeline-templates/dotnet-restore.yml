@@ -1,0 +1,19 @@
+parameters:
+- name: solutionPath
+  type: string
+  default: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.sln'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
+  inputs:
+    command: 'restore'
+    projects: '${{ parameters.solutionPath }}'
+    feedsToUse: 'select'

@@ -1,0 +1,43 @@
+parameters:
+- name: projectPath
+  type: string
+  default: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/Xbl.Web.csproj'
+- name: buildConfiguration
+  type: string
+  default: 'Release'
+- name: publishDir
+  type: string
+  default: '$(Build.ArtifactStagingDirectory)/publish'
+- name: reactBuildDir
+  type: string
+  default: 'Xbl.Web/ClientApp/build'
+
+steps:
+- task: CopyFiles@2
+  displayName: 'Copy React build to wwwroot'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/Xbl.Web/${{ parameters.reactBuildDir }}'
+    Contents: '**'
+    TargetFolder: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/wwwroot'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish Xbl.Web'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '${{ parameters.projectPath }}'
+    arguments: '--configuration ${{ parameters.buildConfiguration }} --output ${{ parameters.publishDir }} --no-restore'
+    zipAfterPublish: false
+
+- task: ArchiveFiles@2
+  displayName: 'Archive Xbl.Web deployment package'
+  inputs:
+    rootFolderOrFile: '${{ parameters.publishDir }}/Xbl.Web'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
+    replaceExistingArchive: true
+
+- publish: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
+  displayName: 'Publish Xbl.Web Artifact'
+  artifact: 'xbl-web'

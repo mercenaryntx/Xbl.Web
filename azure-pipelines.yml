@@ -4,7 +4,6 @@ trigger:
       - main
       - master
 
-# Define resources to checkout both repositories
 resources:
   repositories:
   - repository: XblRepo
@@ -20,113 +19,39 @@ variables:
   buildConfiguration: 'Release'
   publishDir: '$(Build.ArtifactStagingDirectory)/publish'
   reactBuildDir: 'Xbl.Web/ClientApp/build'
+  keyVaultName: 'xbl-keyvault'  # Update with your Key Vault name
 
 stages:
 - stage: Build
   displayName: 'Build and Package'
   jobs:
   - job: BuildJob
-    displayName: 'Build Xbl.Web and Xbl.Function'
+    displayName: 'Build Xbl.Web'
     steps:
     
-    # Step 1: Checkout both repositories
-    - checkout: self
-      displayName: 'Checkout Xbl.Web repository'
+    # Step 1: Checkout repositories
+    - template: pipeline-templates/checkout-repos.yml
     
-    - checkout: XblRepo
-      displayName: 'Checkout Xbl repository'
+    # Step 2: Restore NuGet packages
+    - template: pipeline-templates/dotnet-restore.yml
     
-    # Step 2: Install .NET SDK
-    - task: UseDotNet@2
-      displayName: 'Install .NET SDK'
+    # Step 3: Build React App
+    - template: pipeline-templates/react-build.yml
+    
+    # Step 4: Get Azure Storage Connection String from Key Vault
+    - task: AzureKeyVault@2
+      displayName: 'Get Azure Storage Connection String from Key Vault'
       inputs:
-        packageType: 'sdk'
-        version: '8.x'
-        installationPath: $(Agent.ToolsDirectory)/dotnet
+        azureSubscription: 'xbl'
+        KeyVaultName: '$(keyVaultName)'
+        SecretsFilter: 'AzureStorageConnectionString'
+        RunAsPreJob: false
     
-    # Step 3: Restore NuGet packages
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore NuGet packages'
-      inputs:
-        command: 'restore'
-        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.sln'
-        feedsToUse: 'select'
+    # Step 5: Download live.db from Azure Blob Storage
+    - template: pipeline-templates/download-database.yml
     
-    # Step 4: Build React App
-    - task: NodeTool@0
-      displayName: 'Install Node.js'
-      inputs:
-        versionSpec: '20.x'
-    
-    - task: Npm@1
-      inputs:
-        command: 'install'
-        workingDir: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/ClientApp'
-      displayName: 'npm install - React App'
-    
-    - task: Npm@1
-      inputs:
-        command: 'custom'
-        workingDir: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/ClientApp'
-        customCommand: 'run build'
-      displayName: 'npm run build - React App'
-    
-    # Step 5: Copy React build to wwwroot
-    - task: CopyFiles@2
-      displayName: 'Copy React build to wwwroot'
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/Xbl.Web/$(reactBuildDir)'
-        Contents: '**'
-        TargetFolder: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/wwwroot'
-    
-    # Step 6: Publish Xbl.Web
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish Xbl.Web'
-      inputs:
-        command: 'publish'
-        publishWebProjects: false
-        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/Xbl.Web.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(publishDir) --no-restore'
-        zipAfterPublish: false
-    
-    # Step 7: Publish Xbl.Function
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish Xbl.Function'
-      inputs:
-        command: 'publish'
-        publishWebProjects: false
-        projects: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Function/Xbl.Function.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(publishDir) --no-restore'
-        zipAfterPublish: false
-    
-    # Step 8: Archive Xbl.Web deployment package
-    - task: ArchiveFiles@2
-      displayName: 'Archive Xbl.Web deployment package'
-      inputs:
-        rootFolderOrFile: '$(publishDir)/Xbl.Web'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
-        replaceExistingArchive: true
-    
-    # Step 9: Archive Xbl.Function deployment package
-    - task: ArchiveFiles@2
-      displayName: 'Archive Xbl.Function deployment package'
-      inputs:
-        rootFolderOrFile: '$(publishDir)/Xbl.Function'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/XblFunction.zip'
-        replaceExistingArchive: true
-    
-    # Step 10: Publish build artifacts
-    - publish: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
-      displayName: 'Publish Xbl.Web Artifact'
-      artifact: 'xbl-web'
-    
-    - publish: '$(Build.ArtifactStagingDirectory)/XblFunction.zip'
-      displayName: 'Publish Xbl.Function Artifact'
-      artifact: 'xbl-function'
+    # Step 6: Build and publish Xbl.Web
+    - template: pipeline-templates/build-and-publish-web.yml
 
 - stage: Deploy
   displayName: 'Deploy to Azure'
@@ -140,35 +65,4 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: 'xbl-web'
-            displayName: 'Download Xbl.Web Artifact'
-          
-          - task: AzureWebApp@1
-            displayName: 'Deploy Xbl.Web to Azure Web App'
-            inputs:
-              azureSubscription: 'xbl'
-              appType: 'webApp'
-              appName: 'xbl'
-              package: '$(Pipeline.Workspace)/xbl-web/XblWebApp.zip'
-              deploymentMethod: 'zipDeploy'
-  
-  - deployment: DeployFunction
-    displayName: 'Deploy Xbl.Function to Azure Functions'
-    environment: 'Production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: 'xbl-function'
-            displayName: 'Download Xbl.Function Artifact'
-          
-          - task: AzureFunctionApp@2
-            displayName: 'Deploy Xbl.Function to Azure Functions'
-            inputs:
-              azureSubscription: 'xbl'
-              appType: 'functionApp'
-              appName: 'xblfunc'
-              package: '$(Pipeline.Workspace)/xbl-function/XblFunction.zip'
-              deploymentMethod: 'zipDeploy'
+          - template: pipeline-templates/deploy-web.yml

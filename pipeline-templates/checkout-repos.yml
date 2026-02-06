@@ -1,0 +1,11 @@
+parameters:
+- name: sourceDirectory
+  type: string
+  default: '$(Build.SourcesDirectory)/Xbl.Web'
+
+steps:
+- checkout: self
+  displayName: 'Checkout Xbl.Web repository'
+
+- checkout: XblRepo
+  displayName: 'Checkout Xbl repository'

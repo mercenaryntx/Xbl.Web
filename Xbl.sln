@@ -19,14 +19,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web", "Xbl.Web\Xbl.Web.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Xbl", "Xbl", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Function", "Xbl.Function\Xbl.Function.csproj", "{DE95290E-0BC3-0833-1F4D-A9B2F669EBBE}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Shared", "Xbl.Web.Shared\Xbl.Web.Shared.csproj", "{37F39AD5-4851-3E7C-4D19-6DB7D99B8600}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devops", "devops", "{6929E195-1537-4C3C-887B-AECFD6612662}"
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Update", "Xbl.Web.Update\Xbl.Web.Update.csproj", "{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,14 +62,14 @@ Global
 		{272D5419-70C6-4E8B-ACE4-07331005B469}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{272D5419-70C6-4E8B-ACE4-07331005B469}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{272D5419-70C6-4E8B-ACE4-07331005B469}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DE95290E-0BC3-0833-1F4D-A9B2F669EBBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DE95290E-0BC3-0833-1F4D-A9B2F669EBBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DE95290E-0BC3-0833-1F4D-A9B2F669EBBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DE95290E-0BC3-0833-1F4D-A9B2F669EBBE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{37F39AD5-4851-3E7C-4D19-6DB7D99B8600}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{37F39AD5-4851-3E7C-4D19-6DB7D99B8600}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37F39AD5-4851-3E7C-4D19-6DB7D99B8600}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37F39AD5-4851-3E7C-4D19-6DB7D99B8600}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

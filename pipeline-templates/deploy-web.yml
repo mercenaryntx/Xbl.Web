@@ -1,0 +1,21 @@
+parameters:
+- name: appName
+  type: string
+  default: 'xbl'
+- name: azureSubscription
+  type: string
+  default: 'xbl'
+
+steps:
+- download: current
+  artifact: 'xbl-web'
+  displayName: 'Download Xbl.Web Artifact'
+
+- task: AzureWebApp@1
+  displayName: 'Deploy Xbl.Web to Azure Web App'
+  inputs:
+    azureSubscription: '${{ parameters.azureSubscription }}'
+    appType: 'webApp'
+    appName: '${{ parameters.appName }}'
+    package: '$(Pipeline.Workspace)/xbl-web/XblWebApp.zip'
+    deploymentMethod: 'zipDeploy'

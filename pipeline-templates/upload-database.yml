@@ -1,0 +1,47 @@
+parameters:
+- name: containerName
+  type: string
+  default: 'data'
+- name: blobName
+  type: string
+  default: 'live.db'
+- name: sourceFile
+  type: string
+  default: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/data/live.db'
+
+steps:
+- task: PowerShell@2
+  displayName: 'Upload live.db to Azure Blob Storage'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $connectionString = $env:AZURESTORAGECONNECTIONSTRING
+      
+      if ([string]::IsNullOrWhiteSpace($connectionString)) {
+        Write-Error "Azure Storage Connection String not found in environment variables"
+        exit 1
+      }
+      
+      if (-not (Test-Path "${{ parameters.sourceFile }}")) {
+        Write-Error "Source file not found: ${{ parameters.sourceFile }}"
+        exit 1
+      }
+      
+      Write-Host "Uploading ${{ parameters.sourceFile }} to container ${{ parameters.containerName }}"
+      
+      try {
+        az storage blob upload `
+          --connection-string $connectionString `
+          --container-name "${{ parameters.containerName }}" `
+          --name "${{ parameters.blobName }}" `
+          --file "${{ parameters.sourceFile }}" `
+          --overwrite true
+        
+        Write-Host "Successfully uploaded ${{ parameters.blobName }}"
+      }
+      catch {
+        Write-Error "Error uploading blob: $_"
+        exit 1
+      }
+  env:
+    AZURESTORAGECONNECTIONSTRING: $(AzureStorageConnectionString)

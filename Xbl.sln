@@ -24,6 +24,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devops", "devops", "{6929E195-1537-4C3C-887B-AECFD6612662}"
 	ProjectSection(SolutionItems) = preProject
 		azure-pipelines.yml = azure-pipelines.yml
+		azure-pipelines-nightly.yml = azure-pipelines-nightly.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Update", "Xbl.Web.Update\Xbl.Web.Update.csproj", "{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}"

@@ -90,7 +90,7 @@ stages:
           }
           
           # Run with three arguments: api-key, data-folder, blob-connection-string
-          & $exePath $apiKey $dataFolder $blobConnectionString
+          & $exePath $apiKey $dataFolder $blobConnectionString 
           
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Xbl.Web.Update failed with exit code: $LASTEXITCODE"
@@ -108,7 +108,7 @@ stages:
     # Step 8: Build React App
     - template: pipeline-templates/react-build.yml
     
-    # Step 9: Build and publish Xbl.Web (creates the publish directory)
+    # Step 9: Build Xbl.Web
     - template: pipeline-templates/build-publish-web.yml
     
     # Step 10: Copy updated live.db to publish directory
@@ -119,7 +119,7 @@ stages:
         Contents: 'live.db'
         TargetFolder: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web/data'
     
-    # Step 11: Archive and publish artifact (after database is in place)
+    # Step 11: Archive and publish artifact
     - template: pipeline-templates/archive-publish-artifact.yml
   
   # Deployment job - depends on build completing

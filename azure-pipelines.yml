@@ -19,7 +19,7 @@ variables:
   buildConfiguration: 'Release'
   publishDir: '$(Build.ArtifactStagingDirectory)/publish'
   reactBuildDir: 'Xbl.Web/ClientApp/build'
-  keyVaultName: 'xbl-keyvault'  # Update with your Key Vault name
+  keyVaultName: 'xbl-keyvault'
 
 stages:
 - stage: Build
@@ -38,24 +38,10 @@ stages:
     # Step 3: Build React App
     - template: pipeline-templates/react-build.yml
     
-    # Step 4: Build and publish Xbl.Web (creates the publish directory)
+    # Step 4: Build Xbl.Web
     - template: pipeline-templates/build-publish-web.yml
-    
-    # Step 5: Get Azure Storage Connection String from Key Vault
-    - task: AzureKeyVault@2
-      displayName: 'Get Azure Storage Connection String from Key Vault'
-      inputs:
-        azureSubscription: 'xbl'
-        KeyVaultName: '$(keyVaultName)'
-        SecretsFilter: 'AzureStorageConnectionString'
-        RunAsPreJob: false
-    
-    # Step 6: Download live.db directly to publish/data directory
-    - template: pipeline-templates/download-database.yml
-      parameters:
-        targetFolder: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web/data'
-    
-    # Step 7: Archive and publish artifact (after database is in place)
+        
+    # Step 5: Archive and publish artifact
     - template: pipeline-templates/archive-publish-artifact.yml
 
 - stage: Deploy

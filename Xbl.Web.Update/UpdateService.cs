@@ -11,17 +11,20 @@ public class UpdateService
 {
     private readonly ILogger<UpdateService> _logger;
     private readonly IXblClient _xblClient;
+    private readonly GlobalConfig _config;
     private readonly IDatabaseContext _live;
     private readonly IBlobStorageService _blobStorageService;
 
     public UpdateService(
         ILogger<UpdateService> logger,
         IXblClient xblClient,
+        GlobalConfig config,
         [FromKeyedServices(DataSource.Live)] IDatabaseContext live,
         IBlobStorageService blobStorageService)
     {
         _logger = logger;
         _xblClient = xblClient;
+        _config = config;
         _live = live;
         _blobStorageService = blobStorageService;
     }
@@ -74,38 +77,28 @@ public class UpdateService
         var all = await tr.GetAll();
         var titles = all.ToArray();
 
-        _logger.LogInformation("Processing {Count} title images", titles.Length);
+        _logger.LogInformation("Processing title images");
 
-        var downloadedCount = 0;
-        var uploadedCount = 0;
+        var count = 0;
 
         foreach (var title in titles)
         {
             var fileName = $"{title.IntId}.png";
-            var filePath = Path.Combine(DataSource.DataFolder, "titles", fileName);
+            var filePath = Path.Combine(_config.DataFolder, "titles", fileName);
 
             try
             {
-                byte[] bytes;
-                var needsDownload = !File.Exists(filePath);
-
-                if (needsDownload)
+                if (!File.Exists(filePath))
                 {
                     var img = title.DisplayImage;
                     var url = img.Contains('?') ? $"{img}&w=100" : $"{img}?w=100";
-                    bytes = await httpClient.GetByteArrayAsync(url);
+                    var bytes = await httpClient.GetByteArrayAsync(url);
 
                     Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
                     await File.WriteAllBytesAsync(filePath, bytes);
-                    downloadedCount++;
+                    await _blobStorageService.UploadImageAsync("titles", fileName, bytes);
+                    count++;
                 }
-                else
-                {
-                    bytes = await File.ReadAllBytesAsync(filePath);
-                }
-
-                await _blobStorageService.UploadImageAsync("titles", fileName, bytes);
-                uploadedCount++;
             }
             catch (Exception ex)
             {
@@ -113,7 +106,7 @@ public class UpdateService
             }
         }
 
-        _logger.LogInformation("Downloaded {Downloaded} new title images, uploaded {Uploaded} to blob storage", downloadedCount, uploadedCount);
+        _logger.LogInformation("Uploaded {Uploaded} new title images to blob storage", count);
     }
 
     private async Task DownloadAchievementImagesAsync(HttpClient httpClient)
@@ -122,39 +115,28 @@ public class UpdateService
         var allAchievements = await ar.GetAll();
         var achievements = allAchievements.ToArray();
 
-        _logger.LogInformation("Processing {Count} achievement images", achievements.Length);
+        _logger.LogInformation("Processing achievement images");
 
-        var downloadedCount = 0;
-        var uploadedCount = 0;
+        var count = 0;
 
         foreach (var achievement in achievements)
         {
             var fileName = $"{achievement.TitleId}.{achievement.Id}.png";
-            var filePath = Path.Combine(DataSource.DataFolder, "achievements", fileName);
+            var filePath = Path.Combine(_config.DataFolder, "achievements", fileName);
 
             try
             {
-                if (string.IsNullOrEmpty(achievement.DisplayImage))
-                    continue;
+                if (string.IsNullOrEmpty(achievement.DisplayImage)) continue;
 
-                byte[] bytes;
-                var needsDownload = !File.Exists(filePath);
-
-                if (needsDownload)
+                if (!File.Exists(filePath))
                 {
-                    bytes = await httpClient.GetByteArrayAsync($"{achievement.DisplayImage}&w=400");
+                    var bytes = await httpClient.GetByteArrayAsync($"{achievement.DisplayImage}&w=400");
 
                     Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
                     await File.WriteAllBytesAsync(filePath, bytes);
-                    downloadedCount++;
+                    await _blobStorageService.UploadImageAsync("achievements", fileName, bytes);
+                    count++;
                 }
-                else
-                {
-                    bytes = await File.ReadAllBytesAsync(filePath);
-                }
-
-                await _blobStorageService.UploadImageAsync("achievements", fileName, bytes);
-                uploadedCount++;
             }
             catch (Exception ex)
             {
@@ -163,6 +145,6 @@ public class UpdateService
             }
         }
 
-        _logger.LogInformation("Downloaded {Downloaded} new achievement images, uploaded {Uploaded} to blob storage", downloadedCount, uploadedCount);
+        _logger.LogInformation("Uploaded {Uploaded} new achievement images to blob storage", count);
     }
 }

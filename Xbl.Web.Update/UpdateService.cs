@@ -77,10 +77,13 @@ public class UpdateService
         };
         using var httpClient = new HttpClient(handler);
 
-        var titleImages = await DownloadTitleImagesAsync(httpClient);
-        var achievementImages = await DownloadAchievementImagesAsync(httpClient);
+        // Process title and achievement images in parallel
+        var titleImagesTask = DownloadTitleImagesAsync(httpClient);
+        var achievementImagesTask = DownloadAchievementImagesAsync(httpClient);
         
-        return (titleImages, achievementImages);
+        await Task.WhenAll(titleImagesTask, achievementImagesTask);
+        
+        return (await titleImagesTask, await achievementImagesTask);
     }
 
     private async Task<int> DownloadTitleImagesAsync(HttpClient httpClient)
@@ -89,66 +92,114 @@ public class UpdateService
         var all = await tr.GetAll();
         var titles = all.ToArray();
 
-        _logger.LogInformation("Processing title images");
+        _logger.LogInformation("Processing {Count} title images", titles.Length);
 
-        var count = 0;
+        // Get existing blobs from storage
+        var existingBlobs = await _blobStorageService.GetExistingBlobsAsync("titles");
+        _logger.LogInformation("Found {Count} existing title images in blob storage", existingBlobs.Count);
 
-        foreach (var title in titles)
+        // Filter to only titles that need processing (not in blob storage)
+        var titlesToProcess = titles
+            .Where(t => !existingBlobs.Contains($"{t.IntId}.png"))
+            .ToArray();
+
+        _logger.LogInformation("Need to download {Count} missing title images", titlesToProcess.Length);
+
+        if (titlesToProcess.Length == 0)
         {
-            var fileName = $"{title.IntId}.png";
-            var filePath = Path.Combine(_config.DataFolder, "titles", fileName);
+            return 0;
+        }
 
+        // Process images in parallel with a degree of parallelism
+        var semaphore = new SemaphoreSlim(10); // Limit concurrent downloads to 10
+        var successCount = 0;
+        var lockObj = new object();
+
+        var tasks = titlesToProcess.Select(async title =>
+        {
+            await semaphore.WaitAsync();
             try
             {
-                if (!File.Exists(filePath))
-                {
-                    var img = title.DisplayImage;
-                    var url = img.Contains('?') ? $"{img}&w=100" : $"{img}?w=100";
-                    var bytes = await httpClient.GetByteArrayAsync(url);
+                var fileName = $"{title.IntId}.png";
+                var filePath = Path.Combine(_config.DataFolder, "titles", fileName);
 
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-                    await File.WriteAllBytesAsync(filePath, bytes);
-                    await _blobStorageService.UploadImageAsync("titles", fileName, bytes);
-                    count++;
+                var img = title.DisplayImage;
+                var url = img.Contains('?') ? $"{img}&w=100" : $"{img}?w=100";
+                var bytes = await httpClient.GetByteArrayAsync(url);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+                await File.WriteAllBytesAsync(filePath, bytes);
+                await _blobStorageService.UploadImageAsync("titles", fileName, bytes);
+
+                lock (lockObj)
+                {
+                    successCount++;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to process image for title {TitleId}", title.IntId);
             }
-        }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
-        _logger.LogInformation("Uploaded {Uploaded} new title images to blob storage", count);
-        return count;
+        await Task.WhenAll(tasks);
+
+        _logger.LogInformation("Uploaded {Uploaded} new title images to blob storage", successCount);
+        return successCount;
     }
 
     private async Task<int> DownloadAchievementImagesAsync(HttpClient httpClient)
     {
         var ar = await _live.GetRepository<Achievement>();
         var allAchievements = await ar.GetAll();
-        var achievements = allAchievements.ToArray();
+        var achievements = allAchievements
+            .Where(a => !string.IsNullOrEmpty(a.DisplayImage))
+            .ToArray();
 
-        _logger.LogInformation("Processing achievement images");
+        _logger.LogInformation("Processing {Count} achievement images", achievements.Length);
 
-        var count = 0;
+        // Get existing blobs from storage
+        var existingBlobs = await _blobStorageService.GetExistingBlobsAsync("achievements");
+        _logger.LogInformation("Found {Count} existing achievement images in blob storage", existingBlobs.Count);
 
-        foreach (var achievement in achievements)
+        // Filter to only achievements that need processing (not in blob storage)
+        var achievementsToProcess = achievements
+            .Where(a => !existingBlobs.Contains($"{a.TitleId}.{a.Id}.png"))
+            .ToArray();
+
+        _logger.LogInformation("Need to download {Count} missing achievement images", achievementsToProcess.Length);
+
+        if (achievementsToProcess.Length == 0)
         {
-            var fileName = $"{achievement.TitleId}.{achievement.Id}.png";
-            var filePath = Path.Combine(_config.DataFolder, "achievements", fileName);
+            return 0;
+        }
 
+        // Process images in parallel with a degree of parallelism
+        var semaphore = new SemaphoreSlim(10); // Limit concurrent downloads to 10
+        var successCount = 0;
+        var lockObj = new object();
+
+        var tasks = achievementsToProcess.Select(async achievement =>
+        {
+            await semaphore.WaitAsync();
             try
             {
-                if (string.IsNullOrEmpty(achievement.DisplayImage)) continue;
+                var fileName = $"{achievement.TitleId}.{achievement.Id}.png";
+                var filePath = Path.Combine(_config.DataFolder, "achievements", fileName);
 
-                if (!File.Exists(filePath))
+                var bytes = await httpClient.GetByteArrayAsync($"{achievement.DisplayImage}&w=400");
+
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+                await File.WriteAllBytesAsync(filePath, bytes);
+                await _blobStorageService.UploadImageAsync("achievements", fileName, bytes);
+
+                lock (lockObj)
                 {
-                    var bytes = await httpClient.GetByteArrayAsync($"{achievement.DisplayImage}&w=400");
-
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-                    await File.WriteAllBytesAsync(filePath, bytes);
-                    await _blobStorageService.UploadImageAsync("achievements", fileName, bytes);
-                    count++;
+                    successCount++;
                 }
             }
             catch (Exception ex)
@@ -156,9 +207,15 @@ public class UpdateService
                 _logger.LogWarning(ex, "Failed to process image for achievement {AchievementId} in title {TitleId}",
                     achievement.Id, achievement.TitleId);
             }
-        }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
-        _logger.LogInformation("Uploaded {Uploaded} new achievement images to blob storage", count);
-        return count;
+        await Task.WhenAll(tasks);
+
+        _logger.LogInformation("Uploaded {Uploaded} new achievement images to blob storage", successCount);
+        return successCount;
     }
 }

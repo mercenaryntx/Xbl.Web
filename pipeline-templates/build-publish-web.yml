@@ -11,10 +11,14 @@ parameters:
 - name: reactBuildDir
   type: string
   default: 'Xbl.Web/ClientApp/build'
+- name: condition
+  type: string
+  default: 'true'
 
 steps:
 - task: CopyFiles@2
   displayName: 'Copy React build to wwwroot'
+  condition: ${{ parameters.condition }}
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)/Xbl.Web/${{ parameters.reactBuildDir }}'
     Contents: '**'
@@ -22,6 +26,7 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: 'Publish Xbl.Web'
+  condition: ${{ parameters.condition }}
   inputs:
     command: 'publish'
     publishWebProjects: false

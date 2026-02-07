@@ -2,10 +2,14 @@ parameters:
 - name: publishDir
   type: string
   default: '$(Build.ArtifactStagingDirectory)/publish'
+- name: condition
+  type: string
+  default: 'true'
 
 steps:
 - task: ArchiveFiles@2
   displayName: 'Archive Xbl.Web deployment package'
+  condition: ${{ parameters.condition }}
   inputs:
     rootFolderOrFile: '${{ parameters.publishDir }}/Xbl.Web'
     includeRootFolder: false
@@ -15,4 +19,5 @@ steps:
 
 - publish: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
   displayName: 'Publish Xbl.Web Artifact'
+  condition: ${{ parameters.condition }}
   artifact: 'xbl-web'

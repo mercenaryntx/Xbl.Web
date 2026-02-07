@@ -37,29 +37,39 @@ public class UpdateService
         {
             var result = await _xblClient.Update();
 
-            if (result == 0)
+            _logger.LogInformation("XblClient Update completed successfully");
+            _logger.LogInformation("Update summary: Titles (Inserted: {TitlesInserted}, Updated: {TitlesUpdated}), " +
+                                 "Achievements (Inserted: {AchievementsInserted}, Updated: {AchievementsUpdated}), " +
+                                 "Stats (Inserted: {StatsInserted}, Updated: {StatsUpdated})",
+                result.TitlesInserted, result.TitlesUpdated,
+                result.AchievementsInserted, result.AchievementsUpdated,
+                result.StatsInserted, result.StatsUpdated);
+
+            var (newTitleImages, newAchievementImages) = await DownloadAndUploadImagesAsync();
+            _logger.LogInformation("Image download and upload completed. New images: {TitleImages} titles, {AchievementImages} achievements",
+                newTitleImages, newAchievementImages);
+
+            var totalChanges = result.TotalChanges + newTitleImages + newAchievementImages;
+            _logger.LogInformation("Total changes: {TotalChanges}", totalChanges);
+
+            _logger.LogInformation("Update completed at: {Time}", DateTime.UtcNow);
+
+            if (totalChanges == 0)
             {
-                _logger.LogInformation("XblClient Update completed successfully");
-                await DownloadAndUploadImagesAsync();
-                _logger.LogInformation("Image download and upload completed successfully");
+                _logger.LogInformation("No new data found. Skipping deployment.");
+                return 2;
             }
-            else
-            {
-                _logger.LogError("XblClient Update failed with code: {Result}", result);
-                return result;
-            }
+
+            return 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during update execution");
             return 1;
         }
-
-        _logger.LogInformation("Update completed at: {Time}", DateTime.UtcNow);
-        return 0;
     }
 
-    private async Task DownloadAndUploadImagesAsync()
+    private async Task<(int TitleImages, int AchievementImages)> DownloadAndUploadImagesAsync()
     {
         var handler = new HttpClientHandler
         {
@@ -67,11 +77,13 @@ public class UpdateService
         };
         using var httpClient = new HttpClient(handler);
 
-        await DownloadTitleImagesAsync(httpClient);
-        await DownloadAchievementImagesAsync(httpClient);
+        var titleImages = await DownloadTitleImagesAsync(httpClient);
+        var achievementImages = await DownloadAchievementImagesAsync(httpClient);
+        
+        return (titleImages, achievementImages);
     }
 
-    private async Task DownloadTitleImagesAsync(HttpClient httpClient)
+    private async Task<int> DownloadTitleImagesAsync(HttpClient httpClient)
     {
         var tr = await _live.GetRepository<Title>();
         var all = await tr.GetAll();
@@ -107,9 +119,10 @@ public class UpdateService
         }
 
         _logger.LogInformation("Uploaded {Uploaded} new title images to blob storage", count);
+        return count;
     }
 
-    private async Task DownloadAchievementImagesAsync(HttpClient httpClient)
+    private async Task<int> DownloadAchievementImagesAsync(HttpClient httpClient)
     {
         var ar = await _live.GetRepository<Achievement>();
         var allAchievements = await ar.GetAll();
@@ -146,5 +159,6 @@ public class UpdateService
         }
 
         _logger.LogInformation("Uploaded {Uploaded} new achievement images to blob storage", count);
+        return count;
     }
 }

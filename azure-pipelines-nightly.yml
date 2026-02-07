@@ -62,6 +62,7 @@ stages:
     # Step 6: Run Xbl.Web.Update to update Xbox Live data
     - task: PowerShell@2
       displayName: 'Run Xbl.Web.Update'
+      name: RunUpdate
       inputs:
         targetType: 'inline'
         script: |
@@ -91,29 +92,44 @@ stages:
           
           # Run with three arguments: api-key, data-folder, blob-connection-string
           & $exePath $apiKey $dataFolder $blobConnectionString 
+          $exitCode = $LASTEXITCODE
           
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Xbl.Web.Update failed with exit code: $LASTEXITCODE"
-            exit $LASTEXITCODE
+          if ($exitCode -eq 2) {
+            Write-Host "##[warning]No new data found. Skipping deployment."
+            Write-Host "##vso[task.setvariable variable=HasUpdates;isOutput=true]false"
+            exit 0
           }
-          
-          Write-Host "Xbl.Web.Update completed successfully"
+          elseif ($exitCode -ne 0) {
+            Write-Error "Xbl.Web.Update failed with exit code: $exitCode"
+            exit $exitCode
+          }
+          else {
+            Write-Host "Xbl.Web.Update completed successfully with new data"
+            Write-Host "##vso[task.setvariable variable=HasUpdates;isOutput=true]true"
+          }
       env:
         OPENXBLAPIKEY: $(OpenXblApiKey)
         AZURESTORAGECONNECTIONSTRING: $(AzureStorageConnectionString)
     
     # Step 7: Upload updated live.db back to Azure Blob Storage
     - template: pipeline-templates/upload-database.yml
+      parameters:
+        condition: eq(variables['RunUpdate.HasUpdates'], 'true')
     
     # Step 8: Build React App
     - template: pipeline-templates/react-build.yml
+      parameters:
+        condition: eq(variables['RunUpdate.HasUpdates'], 'true')
     
     # Step 9: Build Xbl.Web
     - template: pipeline-templates/build-publish-web.yml
+      parameters:
+        condition: eq(variables['RunUpdate.HasUpdates'], 'true')
     
     # Step 10: Copy updated live.db to publish directory
     - task: CopyFiles@2
       displayName: 'Copy updated live.db to publish directory'
+      condition: eq(variables['RunUpdate.HasUpdates'], 'true')
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/data'
         Contents: 'live.db'
@@ -121,12 +137,14 @@ stages:
     
     # Step 11: Archive and publish artifact
     - template: pipeline-templates/archive-publish-artifact.yml
+      parameters:
+        condition: eq(variables['RunUpdate.HasUpdates'], 'true')
   
   # Deployment job - depends on build completing
   - deployment: DeployWebApp
     displayName: 'Deploy Xbl.Web to Azure Web App'
     dependsOn: UpdateAndBuild
-    condition: succeeded()
+    condition: and(succeeded(), eq(dependencies.UpdateAndBuild.outputs['UpdateAndBuild.RunUpdate.HasUpdates'], 'true'))
     environment: 'Production'
     strategy:
       runOnce:

@@ -11,7 +11,7 @@ parameters:
 
 steps:
 - task: PowerShell@2
-  displayName: 'Download live.db from Azure Blob Storage'
+  displayName: 'Download ${{ parameters.blobName }} from Azure Blob Storage'
   inputs:
     targetType: 'inline'
     script: |

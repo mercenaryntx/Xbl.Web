@@ -1,0 +1,18 @@
+parameters:
+- name: publishDir
+  type: string
+  default: '$(Build.ArtifactStagingDirectory)/publish'
+
+steps:
+- task: ArchiveFiles@2
+  displayName: 'Archive Xbl.Web deployment package'
+  inputs:
+    rootFolderOrFile: '${{ parameters.publishDir }}/Xbl.Web'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
+    replaceExistingArchive: true
+
+- publish: '$(Build.ArtifactStagingDirectory)/XblWebApp.zip'
+  displayName: 'Publish Xbl.Web Artifact'
+  artifact: 'xbl-web'

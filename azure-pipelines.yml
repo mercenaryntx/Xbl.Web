@@ -39,7 +39,7 @@ stages:
     - template: pipeline-templates/react-build.yml
     
     # Step 4: Build and publish Xbl.Web (creates the publish directory)
-    - template: pipeline-templates/build-and-publish-web.yml
+    - template: pipeline-templates/build-publish-web.yml
     
     # Step 5: Get Azure Storage Connection String from Key Vault
     - task: AzureKeyVault@2
@@ -54,6 +54,9 @@ stages:
     - template: pipeline-templates/download-database.yml
       parameters:
         targetFolder: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web/data'
+    
+    # Step 7: Archive and publish artifact (after database is in place)
+    - template: pipeline-templates/archive-publish-artifact.yml
 
 - stage: Deploy
   displayName: 'Deploy to Azure'

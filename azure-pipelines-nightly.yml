@@ -149,7 +149,7 @@ stages:
   - deployment: DeployWebApp
     displayName: 'Deploy Xbl.Web to Azure Web App'
     dependsOn: UpdateAndBuild
-    condition: and(succeeded(), eq(dependencies.UpdateAndBuild.outputs['UpdateAndBuild.RunUpdate.HasUpdates'], 'true'))
+    condition: and(succeeded(), eq(dependencies.UpdateAndBuild.outputs['RunUpdate.HasUpdates'], 'true'))
     environment: 'Production'
     strategy:
       runOnce:

@@ -40,8 +40,22 @@ stages:
     
     # Step 4: Build Xbl.Web
     - template: pipeline-templates/build-publish-web.yml
+  
+    # Step 5: Get Azure Storage Connection String from Key Vault
+    - task: AzureKeyVault@2
+      displayName: 'Get Azure Storage Connection String from Key Vault'
+      inputs:
+        azureSubscription: 'xbl'
+        KeyVaultName: '$(keyVaultName)'
+        SecretsFilter: 'AzureStorageConnectionString'
+        RunAsPreJob: false
+    
+    # Step 6: Download live.db directly to publish/data directory
+    - template: pipeline-templates/download-database.yml
+      parameters:
+        targetFolder: '$(Build.ArtifactStagingDirectory)/publish/Xbl.Web/data'
         
-    # Step 5: Archive and publish artifact
+    # Step 7: Archive and publish artifact
     - template: pipeline-templates/archive-publish-artifact.yml
 
 - stage: Deploy

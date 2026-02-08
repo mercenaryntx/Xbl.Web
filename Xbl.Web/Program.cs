@@ -34,6 +34,8 @@ builder.Services
         c.BaseAddress = new Uri("https://xbl.io/api/v2/");
     });
 
+builder.Services.AddTransient<Xbl.Client.Queries.IBuiltInQueries, Xbl.Client.Queries.SqliteBuiltInQueries>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

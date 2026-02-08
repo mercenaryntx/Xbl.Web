@@ -3,10 +3,16 @@ body {
   background-color: #1e1e1e;
   color: #fff;
   padding: 20px;
+  margin: 0;
 }
 
 .app {
   min-height: 100vh;
   max-width: 1232px;
-  margin: auto;  
+  margin: auto;
+}
+
+/* Prevent body scroll when menu is open */
+body.menu-open {
+  overflow: hidden;
 }

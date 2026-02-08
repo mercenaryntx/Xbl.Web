@@ -12,12 +12,11 @@ const AchievementsList = () => {
 	const [games, setGames] = useState([]);
 	const [hasMore, setHasMore] = useState(true);
 	const [page, setPage] = useState(0);
-	const [order, setOrder] = useState('lastPlayed-desc');
-	const [source, setSource] = useState('live');
+	const [order, setOrder] = useState(() => sessionStorage.getItem('orderSelection') || 'lastPlayed-desc');
+	const [source, setSource] = useState(() => sessionStorage.getItem('sourceSelection') || 'live');
 	const [searchVisible, setSearchVisible] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 
-	const loadingRef = useRef(null);
 	const searchInputRef = useRef(null);
 	const searchToggleRef = useRef(null);
 
@@ -55,14 +54,18 @@ const AchievementsList = () => {
 	};
 
 	const handleOrderChange = (e) => {
-		setOrder(e.target.value);
+		const newOrder = e.target.value;
+		setOrder(newOrder);
+		sessionStorage.setItem('orderSelection', newOrder);
 		setPage(0);
 		setHasMore(true);
 		setGames([]);
 	};
 
 	const handleSourceChange = (e) => {
-		setSource(e.target.value);
+		const newSource = e.target.value;
+		setSource(newSource);
+		sessionStorage.setItem('sourceSelection', newSource);
 		setPage(0);
 		setHasMore(true);
 		setGames([]);
@@ -91,22 +94,8 @@ const AchievementsList = () => {
 		e.stopPropagation();
 	};
 
-	const update = async (e) => {
-		loadingRef.current.classList.remove('d-none');
-		const response = await fetch(`${API_BASE_URL}/Titles/update`, { method: "POST" });
-		setLastUpdate(response.headers.get(LAST_UPDATE_KEY));
-		loadingRef.current.classList.add('d-none');
-		setPage(0);
-		setHasMore(true);
-		setGames([]);
-		fetchFirstPage();
-	}
-
 	return (
 		<div>
-			<div className="loading d-none" ref={loadingRef}>
-				<img src={loading}></img>
-			</div>
 			<div className="order-selection">
 				{searchVisible && (
 					<input id="search"
@@ -121,7 +110,6 @@ const AchievementsList = () => {
 				<button id="search-toggle" onClick={handleSearchToggle} ref={searchToggleRef}>
 					<img src={searchIcon} aria-label="search"></img>
 				</button>
-				<button id="update" onClick={update}>Update</button>
 				<div className="break"></div>
 				<select id="order" value={order} onChange={handleOrderChange}>
 					<option value="lastPlayed-desc">Recently played</option>

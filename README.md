@@ -104,7 +104,11 @@ npm start
 
 ### Custom KQL Queries
 
-Query Mode supports full Kusto Query Language for advanced analytics:
+Query Mode supports full Kusto Query Language for advanced analytics with:
+- **Syntax Highlighting**: Color-coded query syntax for better readability
+- **Intelligent Autocomplete**: Context-aware suggestions for tables, columns, keywords, and functions
+- **Keyboard Shortcuts**: Press `Ctrl+Enter` (or `Cmd+Enter` on Mac) to execute queries
+- **Line Numbers**: Easy navigation in complex queries
 
 **Available Tables:**
 - `titles` - Game titles with progress and statistics

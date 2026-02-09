@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { getHeaders } from '../lastUpdate';
 import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import CodeMirror from '@uiw/react-codemirror';
+import { autocompletion } from '@codemirror/autocomplete';
+import { keymap } from '@codemirror/view';
+import { defaultKeymap } from '@codemirror/commands';
+import { kusto } from './KustoLanguage';
+import { kustoCompletions } from './KustoAutocomplete';
 import loading from '../assets/images/loading.svg';
 import './QueryMode.css';
 
@@ -370,6 +376,18 @@ const [pagination, setPagination] = useState(null);
     setCustomQuery(sample.query);
   };
 
+  const handleQueryChange = useCallback((value) => {
+    setCustomQuery(value);
+  }, []);
+
+  const handleKeyDown = useCallback((event) => {
+    // Execute query on Ctrl+Enter or Cmd+Enter
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      executeCustomQuery();
+    }
+  }, [customQuery, executeCustomQuery]);
+
   return (
     <div className="query-mode">
       <h1>Query Mode</h1>
@@ -445,19 +463,64 @@ const [pagination, setPagination] = useState(null);
               ))}
             </div>
           </div>
-          <textarea
-            className="query-input"
-            value={customQuery}
-            onChange={(e) => setCustomQuery(e.target.value)}
-            placeholder="Enter your Kusto query here...&#10;&#10;Available tables: titles, achievements, stats&#10;&#10;Example:&#10;titles&#10;| where ProgressPercentage > 50&#10;| project Name, ProgressPercentage&#10;| order by ProgressPercentage desc"
-            rows={10}
-          />
+          <div className="query-editor-container">
+            <CodeMirror
+              value={customQuery}
+              height="200px"
+              theme="dark"
+              extensions={[
+                kusto(),
+                autocompletion({
+                  override: [kustoCompletions],
+                  activateOnTyping: true,
+                  closeOnBlur: true
+                }),
+                keymap.of(defaultKeymap)
+              ]}
+              onChange={handleQueryChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter your Kusto query here...
+
+Available tables: titles, achievements, stats
+
+Example:
+titles
+| where ProgressPercentage > 50
+| project Name, ProgressPercentage
+| order by ProgressPercentage desc
+
+Press Ctrl+Enter to execute"
+              basicSetup={{
+                lineNumbers: true,
+                highlightActiveLineGutter: true,
+                highlightSpecialChars: true,
+                foldGutter: true,
+                drawSelection: true,
+                dropCursor: true,
+                allowMultipleSelections: true,
+                indentOnInput: true,
+                syntaxHighlighting: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                autocompletion: true,
+                rectangularSelection: true,
+                crosshairCursor: true,
+                highlightActiveLine: true,
+                highlightSelectionMatches: true,
+                closeBracketsKeymap: true,
+                searchKeymap: true,
+                foldKeymap: true,
+                completionKeymap: true,
+                lintKeymap: true
+              }}
+            />
+          </div>
           <button
             className="execute-btn"
             onClick={() => executeCustomQuery()}
             disabled={loadingState || !customQuery.trim()}
           >
-            Execute Query
+            Execute Query <span className="shortcut-hint">(Ctrl+Enter)</span>
           </button>
         </div>
       </div>

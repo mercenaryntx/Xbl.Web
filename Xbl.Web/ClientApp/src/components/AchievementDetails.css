@@ -59,6 +59,21 @@ background-color: transparent;
 		position: relative;
 		display: flex;
 		flex-direction: column;
+		transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+	}
+	
+	.achievement-container.clickable {
+		cursor: pointer;
+	}
+	
+	.achievement-container.clickable:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+		background-color: #4a4a4a;
+	}
+	
+	.achievement-container.clickable:active {
+		transform: translateY(0);
 	}
 	
 	.achievement-image-wrapper {
@@ -163,6 +178,25 @@ background-color: transparent;
 		font-size: 0.85rem;
 		color: #fff;
 		font-weight: 500;
+	}
+	
+	.ta-link {
+		font-size: 0.75rem;
+		color: #4a9eff;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		margin-top: 4px;
+		transition: color 0.2s;
+	}
+	
+	.achievement-container.clickable:hover .ta-link {
+		color: #6bb4ff;
+		text-decoration: underline;
+	}
+	
+	.ta-icon {
+		font-size: 0.85rem;
 	}
 }
 

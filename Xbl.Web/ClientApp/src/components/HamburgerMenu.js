@@ -34,6 +34,11 @@ const HamburgerMenu = () => {
               <span className="menu-icon">&#127942;</span> Achievements
             </button>
           </li>
+          <li className={location.pathname === '/progress' ? 'active' : ''}>
+            <button onClick={() => navigateTo('/progress')}>
+              <span className="menu-icon">&#128200;</span> Progress Dashboard
+            </button>
+          </li>
           <li className={location.pathname === '/query' ? 'active' : ''}>
             <button onClick={() => navigateTo('/query')}>
               <span className="menu-icon">&#128202;</span> Query Mode

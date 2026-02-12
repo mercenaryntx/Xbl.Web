@@ -52,28 +52,26 @@ const AchievementDetails = () => {
 		return `https://xblcdn.blob.core.windows.net/titles/${id}.png`;
 	}
 
-	// Convert a string to TrueAchievements URL slug format
-	function toTASlug(str) {
-		return str
-			.toLowerCase()
-			.replace(/[®™©]/g, '') // Remove trademark symbols
-			.replace(/[:'']/g, '') // Remove special punctuation
-			.replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
-			.replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-	}
-
-	// Generate TrueAchievements URL for an achievement
-	function getTrueAchievementsUrl(gameName, achievementName) {
-		const gameSlug = toTASlug(gameName);
-		const achievementSlug = toTASlug(achievementName);
-		return `https://www.trueachievements.com/a${titleId}/${achievementSlug}`;
-	}
-
-	// Handle achievement click
-	function handleAchievementClick(achievement) {
+	// Handle achievement click - searches and redirects to TrueAchievements via backend
+	async function handleAchievementClick(achievement) {
 		if (title) {
-			const url = getTrueAchievementsUrl(title.name, achievement.name);
-			window.open(url, '_blank', 'noopener,noreferrer');
+			try {
+				const params = new URLSearchParams({
+					game: title.name,
+					achievement: achievement.name
+				});
+				const response = await fetch(`${API_BASE_URL}/Search/trueachievements?${params}`);
+				const data = await response.json();
+				
+				if (data.url) {
+					window.open(data.url, '_blank', 'noopener,noreferrer');
+				}
+			} catch (error) {
+				console.error('Error searching for achievement:', error);
+				// Fallback: open TrueAchievements search
+				const searchUrl = `https://www.trueachievements.com/searchresults.aspx?search=${encodeURIComponent(`${achievement.name} ${title.name}`)}`;
+				window.open(searchUrl, '_blank', 'noopener,noreferrer');
+			}
 		}
 	}
 
@@ -145,9 +143,6 @@ const AchievementDetails = () => {
 							? `Unlocked ${new Date(achievement.timeUnlocked).toISOString().split('T')[0]}`
 							: '0% complete'
 						}
-					</div>
-					<div className="ta-link">
-						<span className="ta-icon">??</span> View on TrueAchievements
 					</div>
 				</div>
 			</div>

@@ -59,11 +59,6 @@ stages:
     # Step 5: Download live.db from Azure Blob Storage
     - template: pipeline-templates/download-database.yml
     
-    # Step 5b: Download dbox.db from Azure Blob Storage
-    - template: pipeline-templates/download-database.yml
-      parameters:
-        blobName: 'dbox.db'
-    
     # Step 6: Run Xbl.Web.Update to update Xbox Live data
     - task: PowerShell@2
       displayName: 'Run Xbl.Web.Update'

@@ -103,6 +103,8 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
     setLoadingState(true);
     setError(null);
     setQueryResults(null);
+    setPagination(null); // Reset pagination for built-in queries
+    setCurrentPage(1); // Reset to page 1
     
     try {
       const headers = await getHeaders(API_BASE_URL);
@@ -113,7 +115,15 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
       }
       
       const data = await response.json();
-      setQueryResults(processBuiltInQueryResults(queryType, data));
+      const processedResults = processBuiltInQueryResults(queryType, data);
+      
+      // Store raw data for built-in queries so charts can be regenerated
+      setRawData({
+        columns: processedResults.columns,
+        rows: processedResults.rows
+      });
+      
+      setQueryResults(processedResults);
       setSelectedQuery(queryType);
     } catch (err) {
       setError(`Failed to execute query: ${err.message}`);
@@ -334,10 +344,24 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
       // Auto-detect mode
       const columnTypes = detectColumnTypes(columns, rows);
       const xAxisCol = columnTypes.string.length > 0 ? columnTypes.string[0] : 0;
-      const valueCol = columnTypes.numeric.length > 0 ? columnTypes.numeric[0] : -1;
-      const groupCol = columnTypes.string.length > 1 ? columnTypes.string[1] : null;
+      
+      // Find the first numeric column that is NOT the x-axis column
+      let valueCol = -1;
+      for (let i = 0; i < columnTypes.numeric.length; i++) {
+        if (columnTypes.numeric[i] !== xAxisCol) {
+          valueCol = columnTypes.numeric[i];
+          break;
+        }
+      }
+      
+      // If no numeric column found (or only numeric column is x-axis), use first numeric column anyway
+      if (valueCol === -1 && columnTypes.numeric.length > 0) {
+        valueCol = columnTypes.numeric[0];
+      }
       
       if (valueCol === -1) return [];
+      
+      const groupCol = columnTypes.string.length > 1 ? columnTypes.string[1] : null;
 
       // If we have a grouping column and are in stacked mode, use grouping
       if (groupCol !== null && (viewMode === 'stackedColumn' || viewMode === 'stackedArea')) {
@@ -449,6 +473,10 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
 
     switch (viewMode) {
       case 'pie':
+        // For pie chart, determine the data key to use
+        // In auto-detect mode or simple queries, it will be 'value'
+        // In manual mode with multi-series, use the first series key
+        const pieDataKey = seriesKeys.includes('value') ? 'value' : seriesKeys[0];
         return (
           <ResponsiveContainer width="100%" height={400}>
             <PieChart>
@@ -460,7 +488,7 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 outerRadius={120}
                 fill="#8884d8"
-                dataKey="value"
+                dataKey={pieDataKey}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

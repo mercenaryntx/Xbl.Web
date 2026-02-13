@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { getHeaders } from '../lastUpdate';
-import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import CodeMirror from '@uiw/react-codemirror';
 import { autocompletion } from '@codemirror/autocomplete';
 import { keymap } from '@codemirror/view';
@@ -84,11 +84,20 @@ const [customQuery, setCustomQuery] = useState('');
 const [queryResults, setQueryResults] = useState(null);
 const [loadingState, setLoadingState] = useState(false);
 const [error, setError] = useState(null);
-const [viewMode, setViewMode] = useState('table'); // table, pie, line, bar, stacked
+const [viewMode, setViewMode] = useState('table'); // table, pie, line, bar, stackedColumn, stackedArea
 const [showHelp, setShowHelp] = useState(false);
 const [currentPage, setCurrentPage] = useState(1);
 const [pageSize, setPageSize] = useState(100);
 const [pagination, setPagination] = useState(null);
+const [chartDataLimit, setChartDataLimit] = useState(50);
+const [chartSettings, setChartSettings] = useState({
+  xAxisColumn: 0,
+  valueColumns: [],
+  groupByColumn: null,
+  autoDetect: true
+});
+const [showChartSettings, setShowChartSettings] = useState(false);
+const [rawData, setRawData] = useState(null); // Store raw data separately
 
   const executeBuiltInQuery = async (queryType) => {
     setLoadingState(true);
@@ -113,11 +122,13 @@ const [pagination, setPagination] = useState(null);
     }
   };
 
-  const executeCustomQuery = async (page = 1) => {
+  const executeCustomQuery = async (page = 1, customPageSize = null) => {
     if (!customQuery.trim()) {
       setError('Please enter a query');
       return;
     }
+
+    const effectivePageSize = customPageSize !== null ? customPageSize : pageSize;
 
     setLoadingState(true);
     setError(null);
@@ -139,7 +150,7 @@ const [pagination, setPagination] = useState(null);
         body: JSON.stringify({ 
           query: customQuery,
           page: page,
-          pageSize: pageSize
+          pageSize: effectivePageSize
         })
       });
       
@@ -150,10 +161,30 @@ const [pagination, setPagination] = useState(null);
       
       const data = await response.json();
       console.log('Query response:', data); // Debug log
+      
+      const columnNames = data.columns.map(c => c.name);
+      const columnTypes = detectColumnTypes(columnNames, data.rows);
+      
+      // Auto-detect default settings
+      const defaultSettings = {
+        xAxisColumn: columnTypes.string.length > 0 ? columnTypes.string[0] : 0,
+        valueColumns: columnTypes.numeric.length > 0 ? [columnTypes.numeric[0]] : [],
+        groupByColumn: columnTypes.string.length > 1 ? columnTypes.string[1] : null,
+        autoDetect: true
+      };
+      
+      setChartSettings(defaultSettings);
+      
+      // Store raw data separately
+      setRawData({
+        columns: columnNames,
+        rows: data.rows
+      });
+      
       setQueryResults({
-        columns: data.columns.map(c => c.name),
+        columns: columnNames,
         rows: data.rows,
-        chartData: convertToChartData(data.columns.map(c => c.name), data.rows)
+        fullChartData: convertToChartData(columnNames, data.rows, defaultSettings)
       });
       setPagination(data.pagination);
       console.log('Pagination data:', data.pagination); // Debug log
@@ -175,9 +206,25 @@ const [pagination, setPagination] = useState(null);
     setPageSize(newSize);
     setCurrentPage(1);
     if (selectedQuery === 'custom' && customQuery.trim()) {
-      executeCustomQuery(1);
+      executeCustomQuery(1, newSize);
     }
   };
+
+  const updateChartSettings = (newSettings) => {
+    setChartSettings(newSettings);
+  };
+
+  // Rebuild chart data when settings or viewMode change
+  useEffect(() => {
+    if (rawData && rawData.rows && rawData.columns) {
+      const newChartData = convertToChartData(rawData.columns, rawData.rows, chartSettings);
+      setQueryResults(prev => prev ? {
+        ...prev,
+        fullChartData: newChartData
+      } : null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartSettings, viewMode, rawData]);
 
   const processBuiltInQueryResults = (queryType, data) => {
     switch (queryType) {
@@ -192,14 +239,14 @@ const [pagination, setPagination] = useState(null);
             formatTimeSpan(p.minutesPlayed)
           ]),
           summary: `Total unique games: ${data.uniqueGames}`,
-          chartData: data.profiles.map(p => ({ name: p.name, value: p.gamerscore }))
+          fullChartData: data.profiles.map(p => ({ name: p.name, value: p.gamerscore }))
         };
       
       case 'rarity':
         return {
           columns: ['Title', 'Achievement', 'Rarity %'],
           rows: data.map(r => [r.title, r.achievement, r.percentage.toFixed(2) + '%']),
-          chartData: data.slice(0, 10).map(r => ({ 
+          fullChartData: data.map(r => ({ 
             name: r.achievement.substring(0, 20) + (r.achievement.length > 20 ? '...' : ''), 
             value: r.percentage 
           }))
@@ -214,7 +261,7 @@ const [pagination, setPagination] = useState(null);
             c.progressPercentage.toFixed(2) + '%',
             `${c.currentGamerscore}/${c.totalGamerscore}`
           ]),
-          chartData: data.slice(0, 10).map(c => ({ 
+          fullChartData: data.map(c => ({ 
             name: c.title.substring(0, 20) + (c.title.length > 20 ? '...' : ''), 
             value: c.progressPercentage 
           }))
@@ -224,7 +271,7 @@ const [pagination, setPagination] = useState(null);
         return {
           columns: ['Title', 'Time Played'],
           rows: data.map(t => [t.Title || t.title || 'Unknown', formatMinutes(t.Minutes || t.minutes || 0)]),
-          chartData: data.slice(0, 10).map(t => ({ 
+          fullChartData: data.map(t => ({ 
             name: ((t.Title || t.title) || 'Unknown').substring(0, 20) + (((t.Title || t.title) || '').length > 20 ? '...' : ''), 
             value: t.Minutes || t.minutes || 0
           }))
@@ -240,7 +287,7 @@ const [pagination, setPagination] = useState(null);
             w.rareCount || w.rareUnlockedCount || w.RareCount || 0,
             (w.weight || w.Weight || 0).toFixed(2)
           ]),
-          chartData: data.slice(0, 10).map(w => ({ 
+          fullChartData: data.map(w => ({ 
             name: ((w.title || w.Title) || 'Unknown').substring(0, 20) + (((w.title || w.Title) || '').length > 20 ? '...' : ''), 
             value: w.weight || w.Weight || 0
           }))
@@ -250,7 +297,7 @@ const [pagination, setPagination] = useState(null);
         return {
           columns: ['Category', 'Count'],
           rows: data.map(c => [c.category, c.count]),
-          chartData: data.map(c => ({ name: c.category, value: c.count }))
+          fullChartData: data.map(c => ({ name: c.category, value: c.count }))
         };
       
       default:
@@ -258,19 +305,104 @@ const [pagination, setPagination] = useState(null);
     }
   };
 
-  const convertToChartData = (columns, rows) => {
+  const detectColumnTypes = (columns, rows) => {
+    if (rows.length === 0) return { numeric: [], string: [] };
+    
+    const numeric = [];
+    const string = [];
+    
+    columns.forEach((col, idx) => {
+      const sampleValues = rows.slice(0, Math.min(10, rows.length)).map(row => row[idx]);
+      const hasNumeric = sampleValues.some(val => typeof val === 'number');
+      
+      if (hasNumeric) {
+        numeric.push(idx);
+      } else {
+        string.push(idx);
+      }
+    });
+    
+    return { numeric, string };
+  };
+
+  const convertToChartData = (columns, rows, settings = null) => {
     if (rows.length === 0) return [];
     
-    // Try to find numeric columns for charting
-    const firstRow = rows[0];
-    const numericColumnIndex = firstRow.findIndex(val => typeof val === 'number');
+    const currentSettings = settings || chartSettings;
     
-    if (numericColumnIndex === -1) return [];
+    if (currentSettings.autoDetect) {
+      // Auto-detect mode
+      const columnTypes = detectColumnTypes(columns, rows);
+      const xAxisCol = columnTypes.string.length > 0 ? columnTypes.string[0] : 0;
+      const valueCol = columnTypes.numeric.length > 0 ? columnTypes.numeric[0] : -1;
+      const groupCol = columnTypes.string.length > 1 ? columnTypes.string[1] : null;
+      
+      if (valueCol === -1) return [];
 
-    return rows.slice(0, 10).map((row, idx) => ({
-      name: String(row[0]).substring(0, 20) + (String(row[0]).length > 20 ? '...' : ''),
-      value: row[numericColumnIndex]
-    }));
+      // If we have a grouping column and are in stacked mode, use grouping
+      if (groupCol !== null && (viewMode === 'stackedColumn' || viewMode === 'stackedArea')) {
+        return convertToMultiSeriesData(columns, rows, {
+          xAxisColumn: xAxisCol,
+          valueColumns: [valueCol],
+          groupByColumn: groupCol,
+          autoDetect: true
+        });
+      }
+
+      // Simple mode: no grouping
+      return rows.map((row) => ({
+        name: String(row[xAxisCol]).substring(0, 20) + (String(row[xAxisCol]).length > 20 ? '...' : ''),
+        value: row[valueCol]
+      }));
+    } else {
+      // Manual mode: use configured settings
+      return convertToMultiSeriesData(columns, rows, currentSettings);
+    }
+  };
+
+  const convertToMultiSeriesData = (columns, rows, settings = null) => {
+    if (rows.length === 0) return [];
+    
+    const currentSettings = settings || chartSettings;
+    const { xAxisColumn, valueColumns, groupByColumn } = currentSettings;
+    
+    if (groupByColumn !== null && groupByColumn >= 0) {
+      // Group data by the grouping column
+      const grouped = {};
+      
+      rows.forEach(row => {
+        const xValue = String(row[xAxisColumn]);
+        const groupValue = String(row[groupByColumn]);
+        
+        if (!grouped[xValue]) {
+          grouped[xValue] = { name: xValue.substring(0, 20) + (xValue.length > 20 ? '...' : '') };
+        }
+        
+        // When grouping, use just the group value as the series key
+        // This ensures each unique group becomes a separate series
+        valueColumns.forEach(colIdx => {
+          const value = typeof row[colIdx] === 'number' ? row[colIdx] : 0;
+          // Use just the group value as the key so all groups appear as separate series
+          grouped[xValue][groupValue] = (grouped[xValue][groupValue] || 0) + value;
+        });
+      });
+      
+      return Object.values(grouped);
+    } else {
+      // No grouping - each value column becomes a series
+      return rows.map(row => {
+        const dataPoint = {
+          name: String(row[xAxisColumn]).substring(0, 20) + (String(row[xAxisColumn]).length > 20 ? '...' : '')
+        };
+        
+        valueColumns.forEach(colIdx => {
+          const value = typeof row[colIdx] === 'number' ? row[colIdx] : 0;
+          dataPoint[columns[colIdx]] = value;
+        });
+        
+        return dataPoint;
+      });
+    }
   };
 
   const formatTimeSpan = (timeSpan) => {
@@ -295,11 +427,25 @@ const [pagination, setPagination] = useState(null);
   };
 
   const renderChart = () => {
-    if (!queryResults?.chartData || queryResults.chartData.length === 0) {
+    if (!queryResults?.fullChartData || queryResults.fullChartData.length === 0) {
       return <div className="no-chart">No chart data available for this query</div>;
     }
 
-    const data = queryResults.chartData;
+    const data = queryResults.fullChartData.slice(0, chartDataLimit);
+    
+    // Get all series keys (excluding 'name') from ALL data points
+    // This is important because some series might not appear in every data point
+    const seriesKeysSet = new Set();
+    data.forEach(dataPoint => {
+      Object.keys(dataPoint).forEach(key => {
+        if (key !== 'name') {
+          seriesKeysSet.add(key);
+        }
+      });
+    });
+    const seriesKeys = Array.from(seriesKeysSet);
+    
+    const isSingleSeries = seriesKeys.length === 1 && seriesKeys[0] === 'value';
 
     switch (viewMode) {
       case 'pie':
@@ -334,7 +480,16 @@ const [pagination, setPagination] = useState(null);
               <YAxis stroke="#fff" />
               <Tooltip contentStyle={{ backgroundColor: '#2a2a2a', border: '1px solid #444' }} />
               <Legend />
-              <Line type="monotone" dataKey="value" stroke="#00C49F" strokeWidth={2} />
+              {seriesKeys.map((key, idx) => (
+                <Line 
+                  key={key} 
+                  type="monotone" 
+                  dataKey={key} 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  strokeWidth={2}
+                  name={key}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         );
@@ -348,12 +503,19 @@ const [pagination, setPagination] = useState(null);
               <YAxis stroke="#fff" />
               <Tooltip contentStyle={{ backgroundColor: '#2a2a2a', border: '1px solid #444' }} />
               <Legend />
-              <Bar dataKey="value" fill="#0088FE" />
+              {seriesKeys.map((key, idx) => (
+                <Bar 
+                  key={key} 
+                  dataKey={key} 
+                  fill={COLORS[idx % COLORS.length]}
+                  name={key}
+                />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         );
 
-      case 'stacked':
+      case 'stackedColumn':
         return (
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={data}>
@@ -362,8 +524,40 @@ const [pagination, setPagination] = useState(null);
               <YAxis stroke="#fff" />
               <Tooltip contentStyle={{ backgroundColor: '#2a2a2a', border: '1px solid #444' }} />
               <Legend />
-              <Bar dataKey="value" stackId="a" fill="#0088FE" />
+              {seriesKeys.map((key, idx) => (
+                <Bar 
+                  key={key} 
+                  dataKey={key} 
+                  stackId="a" 
+                  fill={COLORS[idx % COLORS.length]} 
+                  name={key}
+                />
+              ))}
             </BarChart>
+          </ResponsiveContainer>
+        );
+
+      case 'stackedArea':
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <AreaChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+              <XAxis dataKey="name" stroke="#fff" angle={-45} textAnchor="end" height={100} />
+              <YAxis stroke="#fff" />
+              <Tooltip contentStyle={{ backgroundColor: '#2a2a2a', border: '1px solid #444' }} />
+              <Legend />
+              {seriesKeys.map((key, idx) => (
+                <Area 
+                  key={key} 
+                  type="monotone" 
+                  dataKey={key} 
+                  stackId="1" 
+                  stroke={COLORS[idx % COLORS.length]} 
+                  fill={COLORS[idx % COLORS.length]}
+                  name={key}
+                />
+              ))}
+            </AreaChart>
           </ResponsiveContainer>
         );
 
@@ -565,12 +759,133 @@ Press Ctrl+Enter to execute"
               <span className="btn-icon">&#128202;</span> Bar Chart
             </button>
             <button
-              className={`view-btn ${viewMode === 'stacked' ? 'active' : ''}`}
-              onClick={() => setViewMode('stacked')}
+              className={`view-btn ${viewMode === 'stackedColumn' ? 'active' : ''}`}
+              onClick={() => setViewMode('stackedColumn')}
             >
-              <span className="btn-icon">&#128207;</span> Stacked
+              <span className="btn-icon">&#128207;</span> Stacked Column
+            </button>
+            <button
+              className={`view-btn ${viewMode === 'stackedArea' ? 'active' : ''}`}
+              onClick={() => setViewMode('stackedArea')}
+            >
+              <span className="btn-icon">&#128200;</span> Stacked Area
             </button>
           </div>
+
+          {viewMode !== 'table' && (
+            <>
+              <div className="chart-controls">
+                <label>Chart data points:</label>
+                <select
+                  value={chartDataLimit}
+                  onChange={(e) => setChartDataLimit(parseInt(e.target.value))}
+                  disabled={loadingState}
+                >
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="250">250</option>
+                  <option value="500">500</option>
+                </select>
+                <span className="chart-info">
+                  {queryResults?.fullChartData && `(${Math.min(chartDataLimit, queryResults.fullChartData.length)} of ${queryResults.fullChartData.length} shown)`}
+                </span>
+                <button
+                  className="settings-toggle-btn"
+                  onClick={() => setShowChartSettings(!showChartSettings)}
+                >
+                  <span className="settings-icon"></span> {showChartSettings ? 'Hide' : 'Show'} Settings
+                </button>
+              </div>
+
+              {showChartSettings && (
+                <div className="chart-settings-panel">
+                  <h3>Chart Configuration</h3>
+                  
+                  <div className="settings-group">
+                    <label className="settings-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={chartSettings.autoDetect}
+                        onChange={(e) => updateChartSettings({ ...chartSettings, autoDetect: e.target.checked })}
+                      />
+                      <span>Auto-detect columns</span>
+                    </label>
+                  </div>
+
+                  {!chartSettings.autoDetect && (
+                    <>
+                      <div className="settings-group">
+                        <label>X-Axis Column:</label>
+                        <select
+                          value={chartSettings.xAxisColumn}
+                          onChange={(e) => updateChartSettings({ ...chartSettings, xAxisColumn: parseInt(e.target.value) })}
+                        >
+                          {queryResults.columns.map((col, idx) => (
+                            <option key={idx} value={idx}>{col}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="settings-group">
+                        <label>Value Column(s):</label>
+                        <div className="column-checkboxes">
+                          {queryResults.columns.map((col, idx) => (
+                            <label key={idx} className="column-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={chartSettings.valueColumns.includes(idx)}
+                                onChange={(e) => {
+                                  const newValueColumns = e.target.checked
+                                    ? [...chartSettings.valueColumns, idx]
+                                    : chartSettings.valueColumns.filter(i => i !== idx);
+                                  updateChartSettings({ ...chartSettings, valueColumns: newValueColumns });
+                                }}
+                              />
+                              <span>{col}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {(viewMode === 'stackedColumn' || viewMode === 'stackedArea') && (
+                        <div className="settings-group">
+                          <label>Group By Column (for stacking):</label>
+                          <select
+                            value={chartSettings.groupByColumn === null ? '' : chartSettings.groupByColumn}
+                            onChange={(e) => updateChartSettings({ 
+                              ...chartSettings, 
+                              groupByColumn: e.target.value === '' ? null : parseInt(e.target.value)
+                            })}
+                          >
+                            <option value="">None</option>
+                            {queryResults.columns.map((col, idx) => (
+                              <option key={idx} value={idx}>{col}</option>
+                            ))}
+                          </select>
+                          <p className="settings-hint">
+                            Select a column to group and stack data. Each unique value becomes a separate series.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {chartSettings.autoDetect && (
+                    <div className="settings-info">
+                      <p>Auto-detect mode uses:</p>
+                      <ul>
+                        <li>First column as X-axis</li>
+                        <li>First numeric column as values</li>
+                        <li>Second string column for grouping (if available)</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           {queryResults.summary && (
             <div className="summary-info">{queryResults.summary}</div>
@@ -609,7 +924,7 @@ Press Ctrl+Enter to execute"
             </div>
           )}
 
-          {pagination && pagination.totalPages > 1 && (
+          {pagination && (
             <div className="pagination-controls">
               <div className="pagination-buttons">
                 <button

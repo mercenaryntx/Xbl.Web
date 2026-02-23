@@ -1,8 +1,8 @@
 trigger: none
 
 schedules:
-- cron: "0 0 * * *"
-  displayName: 'Nightly build at midnight UTC'
+- cron: "0 5 * * *"
+  displayName: 'Nightly build at 5 AM UTC'
   branches:
     include:
     - main

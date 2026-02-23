@@ -1,8 +1,12 @@
 trigger:
-  branches:
-    include:
-      - main
-      - master
+branches:
+  include:
+    - main
+    - master
+paths:
+  exclude:
+    - azure-pipelines-nightly.yml
+    - Xbl.Web.Update/**
 
 resources:
   repositories:
@@ -32,8 +36,10 @@ stages:
     # Step 1: Checkout repositories
     - template: pipeline-templates/checkout-repos.yml
     
-    # Step 2: Restore NuGet packages
+    # Step 2: Restore NuGet packages (Xbl.Web only, excluding Xbl.Web.Update)
     - template: pipeline-templates/dotnet-restore.yml
+      parameters:
+        solutionPath: '$(Build.SourcesDirectory)/Xbl.Web/Xbl.Web/Xbl.Web.csproj'
     
     # Step 3: Build React App
     - template: pipeline-templates/react-build.yml

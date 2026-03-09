@@ -23,7 +23,7 @@ It's the Web version of the [Xbl](https://github.com/mercenaryntx/Xbl) console a
 
 **Backend (.NET 8)**
 - ASP.NET Core Web API
-- Entity Framework Core with SQLite
+- Dapper with SQLite
 - AutoMapper for object mapping
 - KustoLoco for in-memory KQL query processing
 

@@ -58,11 +58,12 @@ services
     .AddSingleton(new Settings { ApiKey = apiKey, Update = "all" })
     .AddSingleton<UpdateService>()
     .AddData(DataSource.Live, DataSource.Xbox360, DataSource.Dbox, DataSource.Xbl)
-    .AddHttpClient<IXblClient, XblClient>((s, c) =>
+    .AddHttpClient<IXblApiClient, XblApiClientV2>((s, c) =>
     {
         c.DefaultRequestHeaders.Add("x-authorization", apiKey);
-        c.BaseAddress = new Uri("https://xbl.io/api/v2/");
+        c.BaseAddress = new Uri("https://xbl.io/api/");
     });
+services.AddSingleton<IXblClient, XblClient>();
 
 var serviceProvider = services.BuildServiceProvider();
 var updateService = serviceProvider.GetRequiredService<UpdateService>();

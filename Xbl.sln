@@ -23,11 +23,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Shared", "Xbl.Web.S
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "devops", "devops", "{6929E195-1537-4C3C-887B-AECFD6612662}"
 	ProjectSection(SolutionItems) = preProject
-		azure-pipelines.yml = azure-pipelines.yml
 		azure-pipelines-nightly.yml = azure-pipelines-nightly.yml
+		azure-pipelines.yml = azure-pipelines.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Update", "Xbl.Web.Update\Xbl.Web.Update.csproj", "{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Client.Integration.Tests", "..\Xbl\Xbl.Client.Integration.Tests\Xbl.Client.Integration.Tests.csproj", "{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -71,6 +73,10 @@ Global
 		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B92FFE6E-CF99-C327-C0EF-72E6ECA5D5CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,6 +88,7 @@ Global
 		{01BF94A8-AF08-374E-9F54-70EE93E36584} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{5764706F-5FF4-EF6A-C1A5-B6D6BC5C2A7F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{A7FE969A-5E15-3C05-D60D-D5BC627005A5} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EC1BE1FE-D4FF-4850-8E5D-84C946D1DA82}

@@ -106,6 +106,16 @@ public class TitlesController : ControllerBase
         return t;
     }
 
+    [HttpGet("{source}/{titleId}/statdelta")]
+    public async Task<IEnumerable<StatDeltaEntry>> GetStatDelta(string source, int titleId)
+    {
+        if (source != "live") return [];
+        var rows = await _live.Query<StatDeltaEntry>(
+            "SELECT UpdatedOn, json_extract(Data, '$.minutes') AS Minutes FROM statdelta WHERE PartitionKey = @TitleId ORDER BY UpdatedOn ASC",
+            new { TitleId = titleId });
+        return rows;
+    }
+
     [HttpOptions]
     public async Task<IActionResult> Options()
     {

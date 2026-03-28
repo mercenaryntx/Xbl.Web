@@ -1,6 +1,8 @@
 // src/components/AchievementDetails.js
-import React, { useState, useEffect } from 'react';
+// src/components/AchievementDetails.js
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TimeDisplay from './TimeDisplay';
 import { getHeaders } from '../lastUpdate';
 import gamerscoreIcon from '../assets/images/gamerscore.svg';
@@ -20,10 +22,52 @@ const AchievementDetails = () => {
   const [minutes, setMinutes] = useState(null);
   const [achievements, setAchievements] = useState([]);
 	const [loadingState, setLoadingState] = useState(true);
+	const [statDelta, setStatDelta] = useState([]);
+	const [showChart, setShowChart] = useState(false);
+	const [chartLoading, setChartLoading] = useState(false);
+	const [activeFilters, setActiveFilters] = useState([]);
+	const [showFilterMenu, setShowFilterMenu] = useState(false);
+	const filterMenuRef = useRef(null);
+
+	const FILTER_OPTIONS = ['Locked', 'Unlocked', 'Rare', 'Common'];
 
   useEffect(() => {
-    fetchAchievements();
+	fetchAchievements();
+	fetchStatDelta();
   }, [source, titleId]);
+
+	useEffect(() => {
+		const handleClickOutside = (e) => {
+			if (filterMenuRef.current && !filterMenuRef.current.contains(e.target)) {
+				setShowFilterMenu(false);
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, []);
+
+	const fetchStatDelta = async () => {
+		if (source !== 'live') return;
+		try {
+			setChartLoading(true);
+			const headers = await getHeaders(API_BASE_URL);
+			const response = await fetch(`${API_BASE_URL}/Titles/${source}/${titleId}/statdelta`, { headers });
+			const data = await response.json();
+			const chartData = data.map(entry => {
+				const d = new Date(entry.updatedOn);
+				d.setDate(d.getDate() - 1);
+				return {
+					date: d.toISOString().split('T')[0],
+					minutes: entry.minutes
+				};
+			});
+			setStatDelta(chartData);
+		} catch (error) {
+			console.error('Error fetching stat delta:', error);
+		} finally {
+			setChartLoading(false);
+		}
+	};
 
 	const fetchAchievements = async () => {
 		setLoadingState(true);
@@ -40,6 +84,23 @@ const AchievementDetails = () => {
 		}
 	};
   
+	const toggleFilter = (filter) => {
+		setActiveFilters(prev =>
+			prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter]
+		);
+	};
+
+	const filteredAchievements = achievements.filter(a => {
+		if (activeFilters.length === 0) return true;
+		return activeFilters.some(f => {
+			if (f === 'Locked') return !a.isUnlocked;
+			if (f === 'Unlocked') return a.isUnlocked;
+			if (f === 'Rare') return a.isRare;
+			if (f === 'Common') return !a.isRare;
+			return true;
+		});
+	});
+
 	function achievementImage(achievement) {
 		if (achievement.displayImage) {
 			if (source === 'live') return `https://xblcdn.blob.core.windows.net/achievements/${titleId}.${achievement.id}.png`;
@@ -84,7 +145,45 @@ const AchievementDetails = () => {
 			<div className="game-details">
 				<div className="game-title">
 					<h3>{title.name}</h3>
-					{minutes > 0 && <TimeDisplay value={minutes}/>}
+					<div className="title-actions">
+						{minutes > 0 && <TimeDisplay value={minutes}/>}
+						<button
+							className={`icon-btn${showChart ? ' active' : ''}`}
+							title="Toggle play time chart"
+							onClick={() => setShowChart(v => !v)}
+							disabled={statDelta.length === 0 && !chartLoading}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+								<rect x="0" y="6" width="3" height="8"/>
+								<rect x="4" y="3" width="3" height="11"/>
+								<rect x="8" y="0" width="3" height="14"/>
+								<rect x="12" y="4" width="2" height="10"/>
+							</svg>
+						</button>
+						<div className="filter-wrapper" ref={filterMenuRef}>
+							<button
+								className={`icon-btn${activeFilters.length > 0 ? ' active' : ''}`}
+								title="Filter achievements"
+								onClick={() => setShowFilterMenu(v => !v)}
+							>
+								&#x2263;
+							</button>
+							{showFilterMenu && (
+								<div className="filter-menu">
+									{FILTER_OPTIONS.map(f => (
+										<label key={f} className="filter-option">
+											<input
+												type="checkbox"
+												checked={activeFilters.includes(f)}
+												onChange={() => toggleFilter(f)}
+											/>
+											{f}
+										</label>
+									))}
+								</div>
+							)}
+						</div>
+					</div>
 				</div>
 				<div className="stat">
 					<span className="nums">
@@ -99,16 +198,32 @@ const AchievementDetails = () => {
 			</div>
 		</div>
 		}
+		{showChart && statDelta.length > 0 && (
+			<div className="stat-delta-chart">
+				<ResponsiveContainer width="100%" height={220}>
+					<BarChart data={statDelta} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+						<CartesianGrid strokeDasharray="3 3" stroke="#444" />
+						<XAxis dataKey="date" tick={{ fill: '#ccc', fontSize: 11 }} interval="preserveStartEnd" />
+						<YAxis tick={{ fill: '#ccc', fontSize: 11 }} />
+						<Tooltip
+							contentStyle={{ backgroundColor: '#2a2a2a', border: '1px solid #555', color: '#fff' }}
+							formatter={(value) => [`${value} min`, 'Play time']}
+						/>
+						<Bar dataKey="minutes" fill="#008746" radius={[3, 3, 0, 0]} />
+					</BarChart>
+				</ResponsiveContainer>
+			</div>
+		)}
 		{loadingState && (
 			<div className="loading-centered">
 				<img src={loading} alt="Loading..." />
 			</div>
 		)}
 		<div className="achievement-wrap grid-container">
-		{!loadingState && achievements.length === 0 && (
-			<div className="no-achievements">No achievements available for this game.</div>
+		{!loadingState && filteredAchievements.length === 0 && (
+			<div className="no-achievements">{achievements.length === 0 ? 'No achievements available for this game.' : 'No achievements match the selected filters.'}</div>
 		)}
-		{!loadingState && achievements.map((achievement) => (
+		{!loadingState && filteredAchievements.map((achievement) => (
 			<div key={achievement.id} className="achievement-item grid-row-item-d4-t8-m4">
 			<div 
 				className="achievement-container clickable" 

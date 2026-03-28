@@ -50,6 +50,90 @@ background-color: transparent;
 	padding-left: 0px;
 }
 
+.title-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: nowrap;
+}
+
+.icon-btn {
+	background: transparent;
+	border: 1px solid #555;
+	color: #ccc;
+	border-radius: 4px;
+	padding: 3px 7px;
+	font-size: 1rem;
+	cursor: pointer;
+	line-height: 1;
+	transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.icon-btn:hover:not(:disabled) {
+	background-color: #007738;
+	border-color: #007738;
+	color: #fff;
+}
+
+.icon-btn.active {
+	background-color: #007738;
+	border-color: #007738;
+	color: #fff;
+}
+
+.icon-btn:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.filter-wrapper {
+	position: relative;
+}
+
+.filter-menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	background-color: #2a2a2a;
+	border: 1px solid #555;
+	border-radius: 4px;
+	padding: 8px 0;
+	min-width: 130px;
+	z-index: 100;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.filter-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 14px;
+	cursor: pointer;
+	color: #ccc;
+	font-size: 0.9rem;
+	white-space: nowrap;
+	transition: background-color 0.15s;
+}
+
+.filter-option:hover {
+	background-color: #3a3a3a;
+	color: #fff;
+}
+
+.filter-option input[type="checkbox"] {
+	accent-color: #008746;
+	width: 14px;
+	height: 14px;
+	cursor: pointer;
+}
+
+.stat-delta-chart {
+	background-color: #2a2a2a;
+	border-radius: 6px;
+	padding: 12px 8px 4px;
+	margin-bottom: 16px;
+}
+
 .achievement-wrap {
 	padding-top: 24px;
 	
@@ -286,15 +370,9 @@ background-color: transparent;
 		.title {
 			margin-bottom: 40px;
 		}
-		
+
 		.title #back {
 			display: none;
-		}
-		
-		.time-display {
-			position: absolute;
-			top: 115px;
-			right: 20px;
 		}
 	}
 	

@@ -139,51 +139,13 @@ const AchievementDetails = () => {
   return (
 	<div className="achievement-details">
 		{title &&
+		<>
 		<div className="title">
 			<button id="back" onClick={() => navigate(-1)}>&#129168;</button>
 			<img src={titleImage(title.titleId)} alt={title.name} className="game-image" />
 			<div className="game-details">
 				<div className="game-title">
 					<h3>{title.name}</h3>
-					<div className="title-actions">
-						{minutes > 0 && <TimeDisplay value={minutes}/>}
-						<button
-							className={`icon-btn${showChart ? ' active' : ''}`}
-							title="Toggle play time chart"
-							onClick={() => setShowChart(v => !v)}
-							disabled={statDelta.length === 0 && !chartLoading}
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-								<rect x="0" y="6" width="3" height="8"/>
-								<rect x="4" y="3" width="3" height="11"/>
-								<rect x="8" y="0" width="3" height="14"/>
-								<rect x="12" y="4" width="2" height="10"/>
-							</svg>
-						</button>
-						<div className="filter-wrapper" ref={filterMenuRef}>
-							<button
-								className={`icon-btn${activeFilters.length > 0 ? ' active' : ''}`}
-								title="Filter achievements"
-								onClick={() => setShowFilterMenu(v => !v)}
-							>
-								&#x2263;
-							</button>
-							{showFilterMenu && (
-								<div className="filter-menu">
-									{FILTER_OPTIONS.map(f => (
-										<label key={f} className="filter-option">
-											<input
-												type="checkbox"
-												checked={activeFilters.includes(f)}
-												onChange={() => toggleFilter(f)}
-											/>
-											{f}
-										</label>
-									))}
-								</div>
-							)}
-						</div>
-					</div>
 				</div>
 				<div className="stat">
 					<span className="nums">
@@ -197,6 +159,46 @@ const AchievementDetails = () => {
 				</div>
 			</div>
 		</div>
+		<div className="title-actions">
+			{minutes > 0 && <TimeDisplay value={minutes}/>}
+			<button
+				className={`icon-btn${showChart ? ' active' : ''}`}
+				title="Toggle play time chart"
+				onClick={() => setShowChart(v => !v)}
+				disabled={statDelta.length === 0 && !chartLoading}
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+					<rect x="0" y="6" width="3" height="8"/>
+					<rect x="4" y="3" width="3" height="11"/>
+					<rect x="8" y="0" width="3" height="14"/>
+					<rect x="12" y="4" width="2" height="10"/>
+				</svg>
+			</button>
+			<div className="filter-wrapper" ref={filterMenuRef}>
+				<button
+					className={`icon-btn${activeFilters.length > 0 ? ' active' : ''}`}
+					title="Filter achievements"
+					onClick={() => setShowFilterMenu(v => !v)}
+				>
+					&#x2263;
+				</button>
+				{showFilterMenu && (
+					<div className="filter-menu">
+						{FILTER_OPTIONS.map(f => (
+							<label key={f} className="filter-option">
+								<input
+									type="checkbox"
+									checked={activeFilters.includes(f)}
+									onChange={() => toggleFilter(f)}
+								/>
+								{f}
+							</label>
+						))}
+					</div>
+				)}
+			</div>
+		</div>
+		</>
 		}
 		{showChart && statDelta.length > 0 && (
 			<div className="stat-delta-chart">

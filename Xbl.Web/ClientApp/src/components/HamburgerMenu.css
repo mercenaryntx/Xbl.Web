@@ -2,7 +2,7 @@
 .hamburger {
   position: fixed;
   top: 20px;
-  left: 20px;
+  right: 20px;
   z-index: 1001;
   background: #2a2a2a;
   border: none;
@@ -66,18 +66,18 @@
 .menu {
   position: fixed;
   top: 0;
-  left: -280px;
+  right: -280px;
   width: 280px;
   height: 100vh;
   background: #2a2a2a;
   z-index: 1000;
-  transition: left 0.3s ease;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  transition: right 0.3s ease;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
   overflow-y: auto;
 }
 
 .menu.open {
-  left: 0;
+  right: 0;
 }
 
 .menu-close {
@@ -145,17 +145,17 @@
 @media (max-width: 768px) {
   .menu {
     width: 240px;
-    left: -240px;
+    right: -240px;
   }
-  
+
   .hamburger {
     top: 15px;
-    left: 15px;
+    right: 15px;
     width: 40px;
     height: 40px;
     padding: 10px;
   }
-  
+
   .hamburger span {
     width: 18px;
   }

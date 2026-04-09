@@ -51,7 +51,7 @@ const AchievementDetails = () => {
 		try {
 			setChartLoading(true);
 			const headers = await getHeaders(API_BASE_URL);
-			const response = await fetch(`${API_BASE_URL}/Titles/${source}/${titleId}/statdelta`, { headers });
+			const response = await fetch(`${API_BASE_URL}/api/Titles/${source}/${titleId}/statdelta`, { headers });
 			const data = await response.json();
 			const chartData = data.map(entry => {
 				const d = new Date(entry.updatedOn);
@@ -73,7 +73,7 @@ const AchievementDetails = () => {
 		setLoadingState(true);
 		try {
 			const headers = await getHeaders(API_BASE_URL);
-			const response = await fetch(`${API_BASE_URL}/Titles/${source}/${titleId}`, { headers: headers });
+			const response = await fetch(`${API_BASE_URL}/api/Titles/${source}/${titleId}`, { headers: headers });
 			const data = await response.json();
 			setAchievements(data.achievements || []);
 			setMinutes(data.minutes);
@@ -121,7 +121,7 @@ const AchievementDetails = () => {
 					game: title.name,
 					achievement: achievement.name
 				});
-				const response = await fetch(`${API_BASE_URL}/Search/trueachievements?${params}`);
+				const response = await fetch(`${API_BASE_URL}/api/Search/trueachievements?${params}`);
 				const data = await response.json();
 				
 				if (data.url) {

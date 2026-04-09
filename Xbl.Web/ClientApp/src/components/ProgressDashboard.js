@@ -20,7 +20,7 @@ const ProgressDashboard = ({ profile }) => {
   const fetchTrends = async () => {
     try {
       setLoading(true);
-      const url = `${API_BASE_URL}/Progress/trends`;
+      const url = `${API_BASE_URL}/api/Progress/trends`;
       console.log('Fetching progress data from:', url);
       const response = await fetch(url);
       if (!response.ok) {

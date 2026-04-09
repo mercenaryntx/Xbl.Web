@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Xbl.Web.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class SearchController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;

@@ -6,7 +6,7 @@ using Xbl.Web.Models.Story;
 namespace Xbl.Web.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class StoryController : ControllerBase
 {
     private readonly IDatabaseContext _live;
@@ -281,6 +281,8 @@ public class StoryController : ControllerBase
                     json_extract(t.Data, '$.displayImage') AS GameImage,
                     json_extract(t.Data, '$.name') AS GameName,
                     json_extract(a.Data, '$.gamerscore') AS Gamerscore,
+                    json_extract(t.Data, '$.titleId') AS TitleId,
+                    json_extract(a.Data, '$.id') AS AchievementId,
                     {X360CorrectedDate} AS TimeUnlocked
                 FROM achievement a
                 JOIN title t ON a.PartitionKey = t.Id
@@ -292,7 +294,8 @@ public class StoryController : ControllerBase
         var firstCompQuery = $"""
             WITH x AS (
                 SELECT
-                    t.Id AS TitleId,
+                    t.Id AS DbId,
+                    json_extract(t.Data, '$.titleId') AS TitleId,
                     json_extract(t.Data, '$.displayImage') AS GameImage,
                     json_extract(t.Data, '$.name') AS GameName,
                     json_extract(t.Data, '$.achievement.progressPercentage') AS ProgressPct,
@@ -302,10 +305,10 @@ public class StoryController : ControllerBase
                 JOIN title t ON a.PartitionKey = t.Id
                 WHERE json_extract(a.Data, '$.unlocked') = true
             )
-            SELECT GameImage, GameName, MAX(CorrectedDate) AS CompletionDate
+            SELECT TitleId, GameImage, GameName, MAX(CorrectedDate) AS CompletionDate
             FROM x
             WHERE CorrectedDate > '2000-01-01' AND ProgressPct = 100 AND TotalGs > 0
-            GROUP BY TitleId
+            GROUP BY DbId
             ORDER BY CompletionDate ASC
             LIMIT 1
             """;
@@ -363,7 +366,9 @@ public class StoryController : ControllerBase
                 json_extract(t.Data, '$.displayImage') AS GameImage,
                 json_extract(t.Data, '$.name') AS GameName,
                 json_extract(a.Data, '$.timeUnlocked') AS TimeUnlocked,
-                json_extract(a.Data, '$.gamerscore') AS Gamerscore
+                json_extract(a.Data, '$.gamerscore') AS Gamerscore,
+                json_extract(t.Data, '$.titleId') AS TitleId,
+                json_extract(a.Data, '$.id') AS AchievementId
             FROM achievement a
             JOIN title t ON a.PartitionKey = t.Id
             WHERE json_extract(a.Data, '$.unlocked') = true
@@ -383,7 +388,9 @@ public class StoryController : ControllerBase
                 json_extract(t.Data, '$.name') AS GameName,
                 json_extract(a.Data, '$.timeUnlocked') AS TimeUnlocked,
                 json_extract(a.Data, '$.gamerscore') AS Gamerscore,
-                json_extract(a.Data, '$.rarity.currentPercentage') AS RarityPercentage
+                json_extract(a.Data, '$.rarity.currentPercentage') AS RarityPercentage,
+                json_extract(t.Data, '$.titleId') AS TitleId,
+                json_extract(a.Data, '$.id') AS AchievementId
             FROM achievement a
             JOIN title t ON a.PartitionKey = t.Id
             WHERE json_extract(a.Data, '$.unlocked') = true
@@ -399,6 +406,7 @@ public class StoryController : ControllerBase
             SELECT
                 json_extract(t.Data, '$.displayImage') AS GameImage,
                 json_extract(t.Data, '$.name') AS GameName,
+                json_extract(t.Data, '$.titleId') AS TitleId,
                 MAX(json_extract(a.Data, '$.timeUnlocked')) AS CompletionDate
             FROM title t
             JOIN achievement a ON a.PartitionKey = t.Id
@@ -417,6 +425,7 @@ public class StoryController : ControllerBase
             SELECT
                 json_extract(t.Data, '$.displayImage') AS GameImage,
                 json_extract(t.Data, '$.name') AS GameName,
+                json_extract(t.Data, '$.titleId') AS TitleId,
                 MIN(json_extract(a.Data, '$.timeUnlocked')) AS StartDate,
                 MAX(json_extract(a.Data, '$.timeUnlocked')) AS EndDate,
                 CAST(ROUND((julianday(MAX(json_extract(a.Data, '$.timeUnlocked'))) - julianday(MIN(json_extract(a.Data, '$.timeUnlocked')))) * 1440) AS INTEGER) AS MinutesToComplete
@@ -440,6 +449,7 @@ public class StoryController : ControllerBase
               SELECT
                   json_extract(t.Data, '$.displayImage') AS GameImage,
                   json_extract(t.Data, '$.name') AS GameName,
+                  json_extract(t.Data, '$.titleId') AS TitleId,
                   json_extract(s.Data, '$.IntValue') AS Minutes
               FROM stat s
               JOIN title t ON s.Id = t.Id
@@ -452,6 +462,7 @@ public class StoryController : ControllerBase
               SELECT
                   json_extract(t.Data, '$.displayImage') AS GameImage,
                   json_extract(t.Data, '$.name') AS GameName,
+                  json_extract(t.Data, '$.titleId') AS TitleId,
                   json_extract(s.Data, '$.IntValue') AS Minutes
               FROM stat s
               JOIN title t ON s.Id = t.Id

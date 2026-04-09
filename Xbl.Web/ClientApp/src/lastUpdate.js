@@ -10,7 +10,7 @@ export function setLastUpdate(value) {
 export async function getLastUpdate(apiBaseUrl) {
     let lastUpdate = localStorage.getItem(LAST_UPDATE_KEY);
     if (lastUpdate) return lastUpdate;
-    const response = await fetch(`${apiBaseUrl}/Titles`, { method: 'OPTIONS' });
+    const response = await fetch(`${apiBaseUrl}/api/Titles`, { method: 'OPTIONS' });
     lastUpdate = response.headers.get(LAST_UPDATE_KEY);
     setLastUpdate(lastUpdate);
     return lastUpdate;

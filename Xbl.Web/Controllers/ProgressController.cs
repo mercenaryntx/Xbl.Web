@@ -5,7 +5,7 @@ using Xbl.Data;
 namespace Xbl.Web.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class ProgressController : ControllerBase
 {
     private readonly IDatabaseContext _live;

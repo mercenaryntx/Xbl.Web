@@ -6,6 +6,21 @@ import './XboxStory.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://localhost:7238';
 
+function toHttps(url) {
+  if (!url) return url;
+  return url.replace(/^http:\/\//i, 'https://');
+}
+
+function titleBlobUrl(titleId) {
+  return titleId ? `https://xblcdn.blob.core.windows.net/titles/${titleId}.png` : null;
+}
+
+function achievementBlobUrl(titleId, achievementId) {
+  return titleId && achievementId
+    ? `https://xblcdn.blob.core.windows.net/achievements/${titleId}.${achievementId}.png`
+    : null;
+}
+
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function formatDate(dateStr) {
@@ -103,13 +118,13 @@ const AchievementCard = ({ title, achievement, badge }) => {
         <div className="achievement-card-images">
           <img
             className="achievement-game-thumb"
-            src={achievement.gameImage || placeholderIcon}
+            src={titleBlobUrl(achievement.titleId) || toHttps(achievement.gameImage) || placeholderIcon}
             alt={achievement.gameName}
             onError={e => { e.target.src = placeholderIcon; }}
           />
           <img
             className="achievement-icon-overlay"
-            src={achievement.icon || placeholderIcon}
+            src={achievementBlobUrl(achievement.titleId, achievement.achievementId) || toHttps(achievement.icon) || placeholderIcon}
             alt={achievement.name}
             onError={e => { e.target.src = placeholderIcon; }}
           />
@@ -137,7 +152,7 @@ const GameCard = ({ title, game, subtitle }) => {
       <div className="game-card-content">
         <img
           className="game-card-thumb"
-          src={game.gameImage || placeholderIcon}
+          src={titleBlobUrl(game.titleId) || toHttps(game.gameImage) || placeholderIcon}
           alt={game.gameName}
           onError={e => { e.target.src = placeholderIcon; }}
         />
@@ -231,7 +246,7 @@ const XboxStory = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/Story`)
+    fetch(`${API_BASE_URL}/api/Story`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

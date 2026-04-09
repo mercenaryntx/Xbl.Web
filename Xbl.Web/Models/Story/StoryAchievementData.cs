@@ -10,4 +10,6 @@ public class StoryAchievementData
     public string TimeUnlocked { get; set; } = string.Empty;
     public int Gamerscore { get; set; }
     public double RarityPercentage { get; set; }
+    public string TitleId { get; set; } = string.Empty;
+    public string AchievementId { get; set; } = string.Empty;
 }

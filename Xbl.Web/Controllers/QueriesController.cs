@@ -15,7 +15,7 @@ using System.Collections.Immutable;
 namespace Xbl.Web.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class QueriesController : ControllerBase
 {
     private readonly IDatabaseContext _live;

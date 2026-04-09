@@ -9,7 +9,7 @@ using Xbl.Web.Models;
 namespace Xbl.Web.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class TitlesController : ControllerBase
 {
     private readonly IDatabaseContext _x360;

@@ -9,4 +9,5 @@ public class StoryGameData
     public string? EndDate { get; set; }
     public int MinutesToComplete { get; set; }
     public int Minutes { get; set; }
+    public string TitleId { get; set; } = string.Empty;
 }

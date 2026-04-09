@@ -108,7 +108,7 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
     
     try {
       const headers = await getHeaders(API_BASE_URL);
-      const response = await fetch(`${API_BASE_URL}/Queries/built-in/${queryType}?limit=50`, { headers });
+      const response = await fetch(`${API_BASE_URL}/api/Queries/built-in/${queryType}?limit=50`, { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -154,7 +154,7 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
         'Content-Type': 'application/json'
       };
       
-      const response = await fetch(`${API_BASE_URL}/Queries/kusto`, {
+      const response = await fetch(`${API_BASE_URL}/api/Queries/kusto`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ 

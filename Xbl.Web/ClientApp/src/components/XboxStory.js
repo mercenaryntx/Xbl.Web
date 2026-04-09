@@ -120,13 +120,27 @@ const AchievementCard = ({ title, achievement, badge }) => {
             className="achievement-game-thumb"
             src={titleBlobUrl(achievement.titleId) || toHttps(achievement.gameImage) || placeholderIcon}
             alt={achievement.gameName}
-            onError={e => { e.target.src = placeholderIcon; }}
+            onError={e => {
+              const raw = toHttps(achievement.gameImage);
+              if (raw && e.target.src.includes('xblcdn.blob.core.windows.net')) {
+                e.target.src = raw;
+              } else {
+                e.target.src = placeholderIcon;
+              }
+            }}
           />
           <img
             className="achievement-icon-overlay"
             src={achievementBlobUrl(achievement.titleId, achievement.achievementId) || toHttps(achievement.icon) || placeholderIcon}
             alt={achievement.name}
-            onError={e => { e.target.src = placeholderIcon; }}
+            onError={e => {
+              const raw = toHttps(achievement.icon);
+              if (raw && e.target.src.includes('xblcdn.blob.core.windows.net')) {
+                e.target.src = raw;
+              } else {
+                e.target.src = placeholderIcon;
+              }
+            }}
           />
         </div>
         <div className="achievement-card-info">
@@ -154,7 +168,14 @@ const GameCard = ({ title, game, subtitle }) => {
           className="game-card-thumb"
           src={titleBlobUrl(game.titleId) || toHttps(game.gameImage) || placeholderIcon}
           alt={game.gameName}
-          onError={e => { e.target.src = placeholderIcon; }}
+          onError={e => {
+            const raw = toHttps(game.gameImage);
+            if (raw && e.target.src.includes('xblcdn.blob.core.windows.net')) {
+              e.target.src = raw;
+            } else {
+              e.target.src = placeholderIcon;
+            }
+          }}
         />
         <div className="game-card-info">
           <div className="game-card-name" title={game.gameName}>{game.gameName}</div>

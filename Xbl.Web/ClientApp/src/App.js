@@ -4,6 +4,7 @@ import AchievementsList from './components/AchievementsList';
 import AchievementDetails from './components/AchievementDetails';
 import QueryMode from './components/QueryMode';
 import ProgressDashboard from './components/ProgressDashboard';
+import XboxStory from './components/XboxStory';
 import HamburgerMenu from './components/HamburgerMenu';
 import './App.css';
 
@@ -17,6 +18,7 @@ function App() {
 				<Route path="/details/:source/:titleId" element={<AchievementDetails />} />
 				<Route path="/query" element={<QueryMode />} />
 				<Route path="/progress" element={<ProgressDashboard />} />
+				<Route path="/story" element={<XboxStory />} />
 			</Routes>
 		</div>
 	</Router>

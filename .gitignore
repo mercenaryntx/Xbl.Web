@@ -417,3 +417,5 @@ FodyWeavers.xsd
 *.msm
 *.msp
 /Xbl.Web.Update/Properties/launchSettings.json
+/.playwright-mcp
+/tasks

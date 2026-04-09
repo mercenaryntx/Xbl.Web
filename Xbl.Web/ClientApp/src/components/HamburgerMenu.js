@@ -44,6 +44,11 @@ const HamburgerMenu = () => {
               <span className="menu-icon">&#128202;</span> Query Mode
             </button>
           </li>
+          <li className={location.pathname === '/story' ? 'active' : ''}>
+            <button onClick={() => navigateTo('/story')}>
+              <span className="menu-icon">&#127918;</span> My Xbox Story
+            </button>
+          </li>
         </ul>
       </nav>
     </>

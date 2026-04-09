@@ -50,6 +50,12 @@ background-color: transparent;
 	padding-left: 0px;
 }
 
+@media (min-width: 769px) {
+	.achievement-details .title {
+		padding-right: 54px;
+	}
+}
+
 .title-actions {
 	display: flex;
 	align-items: center;

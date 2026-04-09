@@ -681,3 +681,51 @@
   margin-top: 12px;
   justify-content: flex-end;
 }
+
+/* ── Mobile layout fixes ── */
+@media (max-width: 600px) {
+  .xbox-story {
+    padding: 12px 12px 40px;
+  }
+
+  .story-header-content {
+    padding: 20px 16px;
+    gap: 14px;
+  }
+
+  .story-profile-image {
+    width: 64px;
+    height: 64px;
+  }
+
+  .story-title {
+    font-size: 1.3rem;
+  }
+
+  .story-subtitle {
+    font-size: 0.8rem;
+    gap: 3px 6px;
+  }
+
+  .timeline-era-stats {
+    flex-wrap: wrap;
+  }
+
+  .timeline-stat {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .story-timeline-vertical {
+    padding-left: 24px;
+  }
+
+  .story-timeline-vertical::before {
+    left: 6px;
+  }
+
+  .timeline-era-dot {
+    left: -29px;
+  }
+}

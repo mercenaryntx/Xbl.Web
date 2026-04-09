@@ -1,9 +1,14 @@
 /* src/App.css */
+html {
+  overflow-x: hidden;
+}
+
 body {
   background-color: #1e1e1e;
   color: #fff;
   padding: 64px 20px 20px;
   margin: 0;
+  overflow-x: hidden;
 }
 
 .app {

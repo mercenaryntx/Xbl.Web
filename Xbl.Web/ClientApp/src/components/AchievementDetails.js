@@ -5,7 +5,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TimeDisplay from './TimeDisplay';
 import { getHeaders } from '../lastUpdate';
-import gamerscoreIcon from '../assets/images/gamerscore.svg';
+import { ReactComponent as GamerscoreIcon } from '../assets/images/gamerscore.svg';
 import trophyIcon from '../assets/images/icons8-trophy-16.png';
 import diamondIcon from '../assets/images/icons8-diamond-16.png';
 import placeholderIcon from '../assets/images/placeholder.png';
@@ -149,7 +149,7 @@ const AchievementDetails = () => {
 				</div>
 				<div className="stat">
 					<span className="nums">
-						<span className="gamerscore"><img src={gamerscoreIcon} alt="gamerscore" className="icon" /> {title.currentGamerscore}/{title.totalGamerscore}</span>
+						<span className="gamerscore"><GamerscoreIcon className="icon" /> {title.currentGamerscore}/{title.totalGamerscore}</span>
 						<span className="achievements"><img src={trophyIcon} alt="trophy" className="icon" /> {title.currentAchievements}</span>
 					</span>
 					<span className="percentage">{title.progressPercentage.toFixed(2)}%</span>
@@ -244,7 +244,7 @@ const AchievementDetails = () => {
 						<h4 className={achievement.isSecret ? 'secret' : ''}>{achievement.name}</h4>
 						<span className="gamerscore">
 							{achievement.isRare && <img src={diamondIcon} alt="rare" className="icon" />}
-							<img src={gamerscoreIcon} alt="gamerscore" className="icon" />
+							<GamerscoreIcon className="icon" />
 							{achievement.gamerscore}
 						</span>
 					</div>

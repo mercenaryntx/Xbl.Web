@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import AchievementItem from './AchievementItem';
 import { LAST_UPDATE_KEY, getHeaders, setLastUpdate } from '../lastUpdate';
@@ -14,11 +14,7 @@ const AchievementsList = () => {
 	const [page, setPage] = useState(0);
 	const [order, setOrder] = useState(() => sessionStorage.getItem('orderSelection') || 'lastPlayed-desc');
 	const [source, setSource] = useState(() => sessionStorage.getItem('sourceSelection') || 'live');
-	const [searchVisible, setSearchVisible] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
-
-	const searchInputRef = useRef(null);
-	const searchToggleRef = useRef(null);
 
 	useEffect(() => {
 		fetchMoreData();
@@ -71,15 +67,6 @@ const AchievementsList = () => {
 		setGames([]);
 	};
 
-	const handleSearchToggle = () => {
-		setSearchVisible(!searchVisible);
-		if (!searchVisible) {
-			setTimeout(() => {
-				searchInputRef.current.focus();
-			}, 0);
-		}
-	};
-
 	const handleSearchChange = (e) => {
 		setSearchQuery(e.target.value);
 		setPage(0);
@@ -87,30 +74,18 @@ const AchievementsList = () => {
 		setGames([]);
 	};
 
-	const handleSearchBlur = (e) => {
-		if (e.relatedTarget !== searchToggleRef.current) {
-			setSearchVisible(false);
-		}
-		e.stopPropagation();
-	};
-
 	return (
 		<div>
 			<div className="order-selection">
-				{searchVisible && (
-					<input id="search"
+				<div className="search-wrapper">
+					<img src={searchIcon} className="search-icon-inline" alt="" aria-hidden="true" />
+					<input
 						type="text"
 						value={searchQuery}
 						onChange={handleSearchChange}
-						onBlur={handleSearchBlur}
 						placeholder="Search game title"
-						ref={searchInputRef}
 					/>
-				)}
-				<button id="search-toggle" onClick={handleSearchToggle} ref={searchToggleRef}>
-					<img src={searchIcon} aria-label="search"></img>
-				</button>
-				<div className="break"></div>
+				</div>
 				<select id="order" value={order} onChange={handleOrderChange}>
 					<option value="lastPlayed-desc">Recently played</option>
 					<option value="name-asc">A-Z</option>

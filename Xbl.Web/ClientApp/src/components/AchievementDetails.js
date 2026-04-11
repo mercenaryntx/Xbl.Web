@@ -1,6 +1,6 @@
 // src/components/AchievementDetails.js
 // src/components/AchievementDetails.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TimeDisplay from './TimeDisplay';
@@ -13,6 +13,32 @@ import loading from '../assets/images/loading.svg';
 import './AchievementDetails.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+function CustomBar({ x, y, width, height, fill, payload }) {
+	const unlocks = payload?.unlocks || 0;
+	const dSize = 5;
+	const dGap = 1;
+	return (
+		<g>
+			{height > 0 && (
+				<rect x={x} y={y} width={width} height={height} fill={fill} rx={2} ry={2} />
+			)}
+			{unlocks > 0 && Array.from({ length: unlocks }).map((_, i) => {
+				const cx = x + width / 2;
+				const cy = y - dSize - dGap - i * (dSize * 2 + dGap);
+				return (
+					<polygon
+						key={i}
+						points={`${cx},${cy - dSize} ${cx + dSize},${cy} ${cx},${cy + dSize} ${cx - dSize},${cy}`}
+						fill="gold"
+						stroke="#b8860b"
+						strokeWidth={0.5}
+					/>
+				);
+			})}
+		</g>
+	);
+}
 
 const AchievementDetails = () => {
   const { source, titleId } = useParams();
@@ -61,7 +87,20 @@ const AchievementDetails = () => {
 					minutes: entry.minutes
 				};
 			});
-			setStatDelta(chartData);
+			const sorted = chartData.sort((a, b) => a.date.localeCompare(b.date));
+			if (sorted.length > 0) {
+				const dataMap = new Map(sorted.map(d => [d.date, d.minutes]));
+				const filled = [];
+				const startDate = new Date(sorted[0].date + 'T12:00:00Z');
+				const endDate = new Date(sorted[sorted.length - 1].date + 'T12:00:00Z');
+				for (let cur = new Date(startDate); cur <= endDate; cur.setUTCDate(cur.getUTCDate() + 1)) {
+					const dateStr = cur.toISOString().split('T')[0];
+					filled.push({ date: dateStr, minutes: dataMap.get(dateStr) || 0 });
+				}
+				setStatDelta(filled);
+			} else {
+				setStatDelta([]);
+			}
 		} catch (error) {
 			console.error('Error fetching stat delta:', error);
 		} finally {
@@ -100,6 +139,22 @@ const AchievementDetails = () => {
 			return true;
 		});
 	});
+
+	const unlocksByDate = useMemo(() => {
+		const map = {};
+		achievements.forEach(a => {
+			if (a.isUnlocked && a.timeUnlocked) {
+				const date = new Date(a.timeUnlocked).toISOString().split('T')[0];
+				map[date] = (map[date] || 0) + 1;
+			}
+		});
+		return map;
+	}, [achievements]);
+
+	const chartDataWithUnlocks = useMemo(
+		() => statDelta.map(entry => ({ ...entry, unlocks: unlocksByDate[entry.date] || 0 })),
+		[statDelta, unlocksByDate]
+	);
 
 	function achievementImage(achievement) {
 		if (achievement.displayImage) {
@@ -203,15 +258,15 @@ const AchievementDetails = () => {
 		{showChart && statDelta.length > 0 && (
 			<div className="stat-delta-chart">
 				<ResponsiveContainer width="100%" height={220}>
-					<BarChart data={statDelta} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+					<BarChart data={chartDataWithUnlocks} margin={{ top: 50, right: 20, left: 0, bottom: 5 }}>
 						<CartesianGrid strokeDasharray="3 3" stroke="#444" />
 						<XAxis dataKey="date" tick={{ fill: '#ccc', fontSize: 11 }} interval="preserveStartEnd" />
-						<YAxis tick={{ fill: '#ccc', fontSize: 11 }} />
+						<YAxis tick={{ fill: '#ccc', fontSize: 11 }} domain={[0, (dataMax) => (dataMax ? Math.ceil(dataMax * 1.3) : 10)]} />
 						<Tooltip
 							contentStyle={{ backgroundColor: '#2a2a2a', border: '1px solid #555', color: '#fff' }}
 							formatter={(value) => [`${value} min`, 'Play time']}
 						/>
-						<Bar dataKey="minutes" fill="#008746" radius={[3, 3, 0, 0]} />
+						<Bar dataKey="minutes" fill="#008746" shape={(props) => <CustomBar {...props} />} />
 					</BarChart>
 				</ResponsiveContainer>
 			</div>

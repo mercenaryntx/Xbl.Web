@@ -15,10 +15,17 @@ const AchievementsList = () => {
 	const [order, setOrder] = useState(() => sessionStorage.getItem('orderSelection') || 'lastPlayed-desc');
 	const [source, setSource] = useState(() => sessionStorage.getItem('sourceSelection') || 'live');
 	const [searchQuery, setSearchQuery] = useState('');
+	const [genreFilter, setGenreFilter] = useState(() => sessionStorage.getItem('genreSelection') || '');
+	const [genres, setGenres] = useState([]);
+	const [editMode, setEditMode] = useState(() => sessionStorage.getItem('editMode') === 'true');
 
 	useEffect(() => {
 		fetchMoreData();
-	}, [order, source, searchQuery]);
+	}, [order, source, searchQuery, genreFilter]);
+
+	useEffect(() => {
+		fetchGenres();
+	}, []);
 
 	function replaceOrderPostfix(str) {
 		return str.replace(/(.*)-(asc|desc)$/, (match, p1, p2) => {
@@ -29,9 +36,15 @@ const AchievementsList = () => {
 	async function fetchPage() {
 		const o = replaceOrderPostfix(order);
 		const headers = await getHeaders(API_BASE_URL);
-		const response = await fetch(`${API_BASE_URL}/api/Titles/${source}?page=${page}&orderBy=${o}&title=${searchQuery}`, { headers: headers });
+		const genreParam = genreFilter ? `&genre=${genreFilter}` : '';
+		const response = await fetch(`${API_BASE_URL}/api/Titles/${source}?page=${page}&orderBy=${o}&title=${searchQuery}${genreParam}`, { headers: headers });
 		return await response.json();
 	}
+
+	const fetchGenres = async () => {
+		const response = await fetch(`${API_BASE_URL}/api/genres`);
+		setGenres(await response.json());
+	};
 
 	const fetchFirstPage = async () => {
 		const data = await fetchPage();
@@ -74,6 +87,63 @@ const AchievementsList = () => {
 		setGames([]);
 	};
 
+	const handleGenreFilterChange = (e) => {
+		const newGenre = e.target.value;
+		setGenreFilter(newGenre);
+		sessionStorage.setItem('genreSelection', newGenre);
+		setPage(0);
+		setHasMore(true);
+		setGames([]);
+	};
+
+	const handleEditModeToggle = () => {
+		setEditMode((prev) => {
+			const next = !prev;
+			sessionStorage.setItem('editMode', String(next));
+			return next;
+		});
+	};
+
+	const updateGame = (titleId, updater) => {
+		setGames((prev) => prev.map((g) => (g.titleId === titleId ? updater(g) : g)));
+	};
+
+	const handleRatingChange = async (titleId, value) => {
+		updateGame(titleId, (g) => ({ ...g, rating: value }));
+		if (value == null) {
+			await fetch(`${API_BASE_URL}/api/ratings/${source}/${titleId}`, { method: 'DELETE' });
+		} else {
+			await fetch(`${API_BASE_URL}/api/ratings/${source}/${titleId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ value }),
+			});
+		}
+	};
+
+	const handleAssignGenre = async (titleId, genreId, genreObj) => {
+		updateGame(titleId, (g) => ({ ...g, genres: [...g.genres, genreObj] }));
+		await fetch(`${API_BASE_URL}/api/genres/${genreId}/games/${source}/${titleId}`, { method: 'PUT' });
+		fetchGenres();
+	};
+
+	const handleUnassignGenre = async (titleId, genreId) => {
+		updateGame(titleId, (g) => ({ ...g, genres: g.genres.filter((x) => x.id !== genreId) }));
+		await fetch(`${API_BASE_URL}/api/genres/${genreId}/games/${source}/${titleId}`, { method: 'DELETE' });
+		fetchGenres();
+	};
+
+	const handleCreateGenre = async (titleId, name) => {
+		const response = await fetch(`${API_BASE_URL}/api/genres`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name }),
+		});
+		const genreObj = await response.json();
+		setGenres((prev) => (prev.some((g) => g.id === genreObj.id) ? prev : [...prev, { ...genreObj, gameCount: 0 }]));
+		await handleAssignGenre(titleId, genreObj.id, genreObj);
+	};
+
 	return (
 		<div>
 			<div className="order-selection">
@@ -92,11 +162,26 @@ const AchievementsList = () => {
 					<option value="name-desc">Z-A</option>
 					<option value="progress-desc">Most completed</option>
 					<option value="progress-asc">Least completed</option>
+					<option value="rating-desc">Rating (high to low)</option>
+					<option value="rating-asc">Rating (low to high)</option>
 				</select>
 				<select id="source" value={source} onChange={handleSourceChange}>
 					<option value="live">Live</option>
 					<option value="x360">Xbox 360</option>
 				</select>
+				<select id="genre" value={genreFilter} onChange={handleGenreFilterChange}>
+					<option value="">All genres</option>
+					{genres.map((g) => (
+						<option key={g.id} value={g.id}>{g.name} ({g.gameCount})</option>
+					))}
+				</select>
+				<button
+					type="button"
+					className={`edit-mode-toggle${editMode ? ' active' : ''}`}
+					onClick={handleEditModeToggle}
+				>
+					{editMode ? 'Done' : 'Edit'}
+				</button>
 			</div>
 			<InfiniteScroll
 				dataLength={games.length}
@@ -106,7 +191,17 @@ const AchievementsList = () => {
 				endMessage={<p>No more games</p>}
 			>
 				{games.map((game) => (
-					<AchievementItem key={game.titleId} game={game} source={source} />
+					<AchievementItem
+						key={game.titleId}
+						game={game}
+						source={source}
+						editMode={editMode}
+						genres={genres}
+						onRatingChange={handleRatingChange}
+						onAssignGenre={handleAssignGenre}
+						onUnassignGenre={handleUnassignGenre}
+						onCreateGenre={handleCreateGenre}
+					/>
 				))}
 			</InfiniteScroll>
 		</div>

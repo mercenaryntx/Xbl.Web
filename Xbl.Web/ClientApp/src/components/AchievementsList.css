@@ -79,6 +79,25 @@
   border-color: #555;
 }
 
+.edit-mode-toggle {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.edit-mode-toggle:hover {
+  border-color: #107C10;
+}
+
+.edit-mode-toggle.active {
+  background-color: #107C10;
+  border-color: #107C10;
+}
+
 .infinite-scroll-component .title {
 	cursor: pointer;
 }

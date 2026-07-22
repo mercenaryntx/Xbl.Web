@@ -3,6 +3,7 @@ using Xbl.Client;
 using Xbl.Client.Io;
 using Xbl.Data;
 using Xbl.Data.Extensions;
+using Xbl.Web.Data;
 using Xbl.Web.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,7 @@ builder.Services
         DataFolder = sp.GetRequiredService<IConfiguration>().GetValue<string>("DataFolder")
     })
     .AddData(DataSource.Live, DataSource.Xbox360, DataSource.Dbox, DataSource.Xbl)
+    .AddSingleton<IRatingsContext, RatingsContext>()
     .AddHttpClient<IXblClient, XblClient>((s, c) =>
     {
         var settings = s.GetRequiredService<Settings>();

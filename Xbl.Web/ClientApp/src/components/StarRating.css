@@ -1,0 +1,53 @@
+/* src/components/StarRating.css */
+.star-rating {
+	display: inline-flex;
+	gap: 2px;
+}
+
+.star-rating .star {
+	position: relative;
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+}
+
+.star-rating .star-empty,
+.star-rating .star-filled {
+	position: absolute;
+	top: 0;
+	left: 0;
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+.star-rating .star-empty {
+	color: #444;
+}
+
+.star-rating .star-filled {
+	color: #107C10;
+	overflow: hidden;
+	width: 0;
+}
+
+.star-rating.editable .star {
+	cursor: pointer;
+}
+
+.star-rating .star-hit-left,
+.star-rating .star-hit-right {
+	position: absolute;
+	top: 0;
+	height: 100%;
+	width: 50%;
+}
+
+.star-rating .star-hit-left {
+	left: 0;
+}
+
+.star-rating .star-hit-right {
+	right: 0;
+}

@@ -22,4 +22,8 @@ public class Title
     public int ProgressPercentage { get; set; }
     [JsonPropertyName("lastTimePlayed")]
     public DateTime LastTimePlayed { get; set; }
+    [JsonPropertyName("rating")]
+    public int? Rating { get; set; }
+    [JsonPropertyName("genres")]
+    public List<GenreRef> Genres { get; set; } = [];
 }

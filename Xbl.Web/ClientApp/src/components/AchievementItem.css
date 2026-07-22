@@ -71,6 +71,29 @@
 	  height: 100%;
 	  background-color: #008746;
 	}
+
+	.tags-row {
+	  display: flex;
+	  align-items: center;
+	  gap: 8px;
+	  margin-top: 8px;
+	  flex-wrap: wrap;
+	}
+}
+
+.genre-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.genre-chip {
+  background: rgba(16, 124, 16, 0.2);
+  border: 1px solid #107C10;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #9fd89f;
 }
 
 .gamerscore {

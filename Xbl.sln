@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Update", "Xbl.Web.U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Client.Integration.Tests", "..\Xbl\Xbl.Client.Integration.Tests\Xbl.Client.Integration.Tests.csproj", "{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbl.Web.Tests", "Xbl.Web.Tests\Xbl.Web.Tests.csproj", "{2AECD5BC-418C-4BAD-806C-503BD27CA0B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF5391DC-6CAA-3D42-8E0F-020FC4FF385A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AECD5BC-418C-4BAD-806C-503BD27CA0B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AECD5BC-418C-4BAD-806C-503BD27CA0B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AECD5BC-418C-4BAD-806C-503BD27CA0B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AECD5BC-418C-4BAD-806C-503BD27CA0B4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,97 @@
+/* src/components/GenrePicker.css */
+.genre-picker {
+	position: relative;
+	display: inline-block;
+}
+
+.genre-picker-trigger {
+	background: #1a1a1a;
+	color: #fff;
+	border: 1px solid #444;
+	border-radius: 12px;
+	padding: 3px 10px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.genre-picker-trigger:hover {
+	border-color: #107C10;
+}
+
+.genre-picker-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 998;
+}
+
+.genre-picker-popover {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	z-index: 999;
+	background: #2a2a2a;
+	border: 1px solid #444;
+	border-radius: 8px;
+	padding: 8px;
+	min-width: 180px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.genre-picker-list {
+	max-height: 200px;
+	overflow-y: auto;
+	margin-bottom: 8px;
+}
+
+.genre-picker-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 4px;
+	font-size: 14px;
+	cursor: pointer;
+	color: #fff;
+}
+
+.genre-picker-item:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: 4px;
+}
+
+.genre-picker-empty {
+	color: #888;
+	font-size: 13px;
+	padding: 4px;
+}
+
+.genre-picker-create {
+	display: flex;
+	gap: 6px;
+	border-top: 1px solid #444;
+	padding-top: 8px;
+}
+
+.genre-picker-create input {
+	flex: 1;
+	background: #1a1a1a;
+	border: 1px solid #444;
+	border-radius: 4px;
+	color: #fff;
+	padding: 5px 8px;
+	font-size: 13px;
+	min-width: 0;
+}
+
+.genre-picker-create button {
+	background: #107C10;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	padding: 5px 10px;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.genre-picker-create button:hover {
+	background: #0e6b0e;
+}

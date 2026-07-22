@@ -10,6 +10,7 @@ public interface IRatingsContext
 
     Task<IEnumerable<GenreSummary>> GetGenresAsync();
     Task<GenreRef> CreateOrGetGenreAsync(string name);
+    Task<GenreRef> RenameGenreAsync(int genreId, string name);
     Task DeleteGenreAsync(int genreId);
 
     Task AssignGenreAsync(int genreId, string source, string titleId);

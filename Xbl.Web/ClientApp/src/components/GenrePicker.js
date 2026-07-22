@@ -8,9 +8,15 @@ const GenrePicker = ({ genres, assignedGenres, onAssign, onUnassign, onCreateGen
 
 	const assignedIds = new Set(assignedGenres.map((g) => g.id));
 	const trimmedQuery = query.trim();
-	const filteredGenres = trimmedQuery
+	const filteredGenres = (trimmedQuery
 		? genres.filter((g) => g.name.toLowerCase().includes(trimmedQuery.toLowerCase()))
-		: genres;
+		: genres
+	)
+		// Stable sort (spec-guaranteed): assigned genres float to the top, otherwise keeping the
+		// existing alphabetical order within each group - so already-selected ones are visible
+		// without scrolling, rather than mixed in wherever they happen to sort by name.
+		.slice()
+		.sort((a, b) => (assignedIds.has(b.id) ? 1 : 0) - (assignedIds.has(a.id) ? 1 : 0));
 	const exactMatch = genres.find((g) => g.name.toLowerCase() === trimmedQuery.toLowerCase());
 	const canCreate = trimmedQuery.length > 0 && !exactMatch;
 

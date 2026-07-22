@@ -20,6 +20,21 @@ public class GenresController(IRatingsContext ratings) : ControllerBase
         return await ratings.CreateOrGetGenreAsync(request.Name);
     }
 
+    [HttpPut("{genreId:int}")]
+    public async Task<ActionResult<GenreRef>> Rename(int genreId, [FromBody] GenreRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name)) return BadRequest("Genre name is required.");
+        try
+        {
+            var renamed = await ratings.RenameGenreAsync(genreId, request.Name);
+            return renamed is null ? NotFound() : renamed;
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
     [HttpDelete("{genreId:int}")]
     public async Task<IActionResult> Delete(int genreId)
     {

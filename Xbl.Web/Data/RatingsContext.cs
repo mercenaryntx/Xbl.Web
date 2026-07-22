@@ -163,6 +163,38 @@ public class RatingsContext : IRatingsContext
         return genre;
     }
 
+    public async Task<GenreRef> RenameGenreAsync(int genreId, string name)
+    {
+        name = name?.Trim();
+        if (string.IsNullOrEmpty(name)) throw new ArgumentException("Genre name is required.", nameof(name));
+
+        using var connection = CreateOpenConnection();
+        using var transaction = connection.BeginTransaction();
+        var now = DateTime.UtcNow.ToString("o");
+        int affected;
+        try
+        {
+            affected = await connection.ExecuteAsync(
+                "UPDATE Genre SET Name = @Name WHERE Id = @GenreId",
+                new { Name = name, GenreId = genreId }, transaction);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 19) // SQLITE_CONSTRAINT (unique Name)
+        {
+            transaction.Rollback();
+            throw new InvalidOperationException($"A genre named '{name}' already exists.");
+        }
+
+        if (affected == 0)
+        {
+            transaction.Rollback();
+            return null;
+        }
+
+        await TouchLastModifiedAsync(connection, transaction, now);
+        transaction.Commit();
+        return new GenreRef { Id = genreId, Name = name };
+    }
+
     public async Task DeleteGenreAsync(int genreId)
     {
         using var connection = CreateOpenConnection();

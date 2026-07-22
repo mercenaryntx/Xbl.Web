@@ -90,6 +90,37 @@ public class RatingsContextTests : IDisposable
     }
 
     [Fact]
+    public async Task RenameGenreAsync_UpdatesTheName()
+    {
+        var genre = await _sut.CreateOrGetGenreAsync("Shoter");
+
+        var renamed = await _sut.RenameGenreAsync(genre.Id, "Shooter");
+
+        renamed.Name.Should().Be("Shooter");
+        (await _sut.GetGenresAsync()).Should().ContainSingle(g => g.Name == "Shooter");
+    }
+
+    [Fact]
+    public async Task RenameGenreAsync_ReturnsNullForUnknownGenre()
+    {
+        var renamed = await _sut.RenameGenreAsync(999, "Whatever");
+
+        renamed.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RenameGenreAsync_ThrowsOnCollisionWithAnotherGenre()
+    {
+        var first = await _sut.CreateOrGetGenreAsync("Shooter");
+        await _sut.CreateOrGetGenreAsync("Platformer");
+
+        var act = () => _sut.RenameGenreAsync(first.Id, "platformer");
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        (await _sut.GetGenresAsync()).Should().Contain(g => g.Name == "Shooter");
+    }
+
+    [Fact]
     public async Task AssignGenreAsync_IsIdempotent()
     {
         var genre = await _sut.CreateOrGetGenreAsync("Shooter");

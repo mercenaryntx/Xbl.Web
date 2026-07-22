@@ -23,7 +23,9 @@
 }
 
 .star-rating .star-empty {
-	color: #444;
+	/* Must stay visible against both the default background and the .title:hover
+	   highlight (#404040) - a dark grey like #444 disappears against that hover state. */
+	color: #999;
 }
 
 .star-rating .star-filled {
@@ -32,22 +34,16 @@
 	width: 0;
 }
 
+.star-rating.editable {
+	gap: 6px;
+}
+
 .star-rating.editable .star {
 	cursor: pointer;
-}
-
-.star-rating .star-hit-left,
-.star-rating .star-hit-right {
-	position: absolute;
-	top: 0;
-	height: 100%;
-	width: 50%;
-}
-
-.star-rating .star-hit-left {
-	left: 0;
-}
-
-.star-rating .star-hit-right {
-	right: 0;
+	/* Bigger than the 16px read-only display size - a single whole-star zone at 16px is still
+	   too small to tap reliably on mobile. Sizing the box up (rather than padding it invisibly
+	   past the gap) avoids adjacent stars' tap targets overlapping each other. */
+	width: 28px;
+	height: 28px;
+	font-size: 28px;
 }

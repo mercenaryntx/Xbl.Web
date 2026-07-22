@@ -37,7 +37,12 @@ const AchievementsList = () => {
 		const o = replaceOrderPostfix(order);
 		const headers = await getHeaders(API_BASE_URL);
 		const genreParam = genreFilter ? `&genre=${genreFilter}` : '';
-		const response = await fetch(`${API_BASE_URL}/api/Titles/${source}?page=${page}&orderBy=${o}&title=${searchQuery}${genreParam}`, { headers: headers });
+		// The server response is cached (VaryByHeader: X-Titles-Last-Update), and bumping that
+		// header value on edit correctly busts the SERVER's cache - but the browser's own HTTP
+		// cache can still serve a request for this URL out of its local cache without the request
+		// ever reaching the network, regardless of the header value sent. cache: 'no-store' forces
+		// every list fetch to hit the network, so freshness only ever depends on the server cache.
+		const response = await fetch(`${API_BASE_URL}/api/Titles/${source}?page=${page}&orderBy=${o}&title=${searchQuery}${genreParam}`, { headers: headers, cache: 'no-store' });
 		return await response.json();
 	}
 
@@ -108,6 +113,13 @@ const AchievementsList = () => {
 		setGames((prev) => prev.map((g) => (g.titleId === titleId ? updater(g) : g)));
 	};
 
+	// The server response cache is keyed in part by the X-Titles-Last-Update header, and the
+	// client caches whatever value it last saw in localStorage indefinitely (see lastUpdate.js) -
+	// it never re-checks the server on its own. Without bumping it here, navigating away and back
+	// resends the same stale header, hits the pre-edit cached response, and the rating/genre
+	// changes appear to have vanished.
+	const bumpLastUpdate = () => setLastUpdate(new Date().toISOString());
+
 	const handleRatingChange = async (titleId, value) => {
 		updateGame(titleId, (g) => ({ ...g, rating: value }));
 		if (value == null) {
@@ -119,17 +131,20 @@ const AchievementsList = () => {
 				body: JSON.stringify({ value }),
 			});
 		}
+		bumpLastUpdate();
 	};
 
 	const handleAssignGenre = async (titleId, genreId, genreObj) => {
 		updateGame(titleId, (g) => ({ ...g, genres: [...g.genres, genreObj] }));
 		await fetch(`${API_BASE_URL}/api/genres/${genreId}/games/${source}/${titleId}`, { method: 'PUT' });
+		bumpLastUpdate();
 		fetchGenres();
 	};
 
 	const handleUnassignGenre = async (titleId, genreId) => {
 		updateGame(titleId, (g) => ({ ...g, genres: g.genres.filter((x) => x.id !== genreId) }));
 		await fetch(`${API_BASE_URL}/api/genres/${genreId}/games/${source}/${titleId}`, { method: 'DELETE' });
+		bumpLastUpdate();
 		fetchGenres();
 	};
 

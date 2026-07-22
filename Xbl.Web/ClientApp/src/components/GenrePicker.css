@@ -95,3 +95,19 @@
 .genre-picker-create button:hover {
 	background: #0e6b0e;
 }
+
+/* Anchoring the popover to the trigger's left edge overflows off-screen on narrow viewports
+   when the trigger sits mid-card, taking the create-genre button out of tappable reach.
+   Pin it as a fixed bottom sheet instead so it always stays within the viewport. */
+@media (max-width: 600px) {
+	.genre-picker-popover {
+		position: fixed;
+		top: auto;
+		left: 12px;
+		right: 12px;
+		bottom: 12px;
+		width: auto;
+		min-width: 0;
+		max-height: 60vh;
+	}
+}

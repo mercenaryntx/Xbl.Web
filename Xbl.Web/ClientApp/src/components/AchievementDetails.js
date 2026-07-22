@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import TimeDisplay from './TimeDisplay';
+import StarRating from './StarRating';
 import { getHeaders } from '../lastUpdate';
 import { ReactComponent as GamerscoreIcon } from '../assets/images/gamerscore.svg';
 import trophyIcon from '../assets/images/icons8-trophy-16.png';
@@ -212,6 +213,18 @@ const AchievementDetails = () => {
 				<div className="progress-bar">
 					<div className="progress" style={{ width: `${title.progressPercentage}%` }}></div>
 				</div>
+				{(title.rating || (title.genres && title.genres.length > 0)) && (
+					<div className="tags-row">
+						{title.rating ? <StarRating value={title.rating} readOnly={true} /> : null}
+						{title.genres && title.genres.length > 0 && (
+							<span className="genre-chips">
+								{title.genres.map((g) => (
+									<span className="genre-chip" key={g.id}>{g.name}</span>
+								))}
+							</span>
+						)}
+					</div>
+				)}
 			</div>
 		</div>
 		<div className="title-actions">

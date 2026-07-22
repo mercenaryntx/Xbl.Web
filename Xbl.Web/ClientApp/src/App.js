@@ -6,6 +6,7 @@ import QueryMode from './components/QueryMode';
 import ProgressDashboard from './components/ProgressDashboard';
 import XboxStory from './components/XboxStory';
 import HamburgerMenu from './components/HamburgerMenu';
+import ScrollManager from './components/ScrollManager';
 import './App.css';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
 	<Router>
 		<div className="app">
 			<HamburgerMenu />
+			<ScrollManager />
 			<Routes>
 				<Route path="/" element={<AchievementsList />} />
 				<Route path="/details/:source/:titleId" element={<AchievementDetails />} />

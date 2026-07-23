@@ -22,17 +22,25 @@ const PREDEFINED_QUERIES = [
 ];
 
 const SAMPLE_KUSTO_QUERIES = [
-  { 
-    name: 'Top 10 Games by Gamerscore', 
+  {
+    name: 'Top 10 Games by Gamerscore',
     query: 'titles\n| project Name, Gamerscore = CurrentGamerscore\n| order by Gamerscore desc\n| take 10'
   },
-  { 
-    name: 'Achievements Under 1% Rarity', 
+  {
+    name: 'Achievements Under 1% Rarity',
     query: 'achievements\n| where IsUnlocked == true and RarityPercentage < 1.0\n| project TitleName, Name, RarityPercentage\n| order by RarityPercentage asc'
   },
-  { 
-    name: 'Completion Rate Distribution', 
+  {
+    name: 'Completion Rate Distribution',
     query: 'titles\n| summarize Count = count() by bin(ProgressPercentage, 10)\n| order by ProgressPercentage asc'
+  },
+  {
+    name: 'Games by Rating',
+    query: 'ratings\n| summarize Count = count() by Rating\n| order by Rating asc'
+  },
+  {
+    name: 'Genre Filter (multi-select)',
+    query: 'genres\n| where Genre == "Action" or Genre == "RPG"\n| join kind=inner (titles) on TitleId\n| distinct Name, ProgressPercentage, CurrentGamerscore'
   }
 ];
 
@@ -74,6 +82,24 @@ const TABLE_SCHEMAS = {
     description: 'Game statistics (currently only time played)',
     columns: [
       { name: 'Minutes', type: 'int', description: 'Minutes played' }
+    ]
+  },
+  ratings: {
+    description: 'One row per game with its rating (edit mode, achievements list page)',
+    columns: [
+      { name: 'TitleId', type: 'string', description: 'Title identifier' },
+      { name: 'TitleName', type: 'string', description: 'Game title' },
+      { name: 'Source', type: 'string', description: '"live" or "x360"' },
+      { name: 'Rating', type: 'int', description: '1-5 stars, 0 if not rated' }
+    ]
+  },
+  genres: {
+    description: 'One row per game-genre assignment (custom genres, edit mode)',
+    columns: [
+      { name: 'TitleId', type: 'string', description: 'Title identifier' },
+      { name: 'TitleName', type: 'string', description: 'Game title' },
+      { name: 'Source', type: 'string', description: '"live" or "x360"' },
+      { name: 'Genre', type: 'string', description: 'Genre name' }
     ]
   }
 };
@@ -670,6 +696,8 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
                   <li><code>order by</code> - Sort results (e.g., <code>order by Gamerscore desc</code>)</li>
                   <li><code>take</code> - Limit results (e.g., <code>take 10</code>)</li>
                   <li><code>summarize</code> - Aggregate data (e.g., <code>summarize count() by Category</code>)</li>
+                  <li><code>join</code> - Combine two tables on a matching column (e.g., <code>join kind=inner (titles) on TitleId</code>)</li>
+                  <li><code>distinct</code> - Deduplicate rows (e.g., <code>distinct Name</code>)</li>
                 </ul>
               </div>
             </div>
@@ -703,7 +731,7 @@ const [rawData, setRawData] = useState(null); // Store raw data separately
               onKeyDown={handleKeyDown}
               placeholder="Enter your Kusto query here...
 
-Available tables: titles, achievements, stats
+Available tables: titles, achievements, stats, ratings, genres
 
 Example:
 titles

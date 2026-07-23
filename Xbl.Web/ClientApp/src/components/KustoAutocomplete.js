@@ -1,10 +1,13 @@
 import { CompletionContext } from '@codemirror/autocomplete';
 
 // Kusto keywords
+// Note: 'in' is deliberately excluded - confirmed (via "where X in (...)") that this app's
+// KustoLoco version doesn't support it, so suggesting it would lead users into a broken query.
+// Use chained "== a or == b" instead (see the Genre Filter sample query).
 const kustoKeywords = [
   'where', 'project', 'order', 'by', 'asc', 'desc', 'take', 'limit',
   'summarize', 'count', 'extend', 'join', 'union', 'let', 'as', 'on',
-  'and', 'or', 'not', 'in', 'contains', 'startswith', 'endswith',
+  'and', 'or', 'not', 'contains', 'startswith', 'endswith',
   'matches', 'has', 'bin', 'ago', 'now', 'datetime', 'timespan',
   'true', 'false', 'null', 'distinct', 'top', 'sort'
 ];
@@ -27,6 +30,18 @@ const tables = [
     label: 'stats',
     type: 'table',
     info: 'Game statistics (time played)',
+    detail: 'table'
+  },
+  {
+    label: 'ratings',
+    type: 'table',
+    info: 'One row per game with its rating (null if unrated)',
+    detail: 'table'
+  },
+  {
+    label: 'genres',
+    type: 'table',
+    info: 'One row per game-genre assignment',
     detail: 'table'
   }
 ];
@@ -60,6 +75,18 @@ const columns = {
   ],
   stats: [
     { name: 'Minutes', type: 'int', description: 'Minutes played' }
+  ],
+  ratings: [
+    { name: 'TitleId', type: 'string', description: 'Title identifier' },
+    { name: 'TitleName', type: 'string', description: 'Game title' },
+    { name: 'Source', type: 'string', description: '"live" or "x360"' },
+    { name: 'Rating', type: 'int', description: '1-5 stars, 0 if not rated' }
+  ],
+  genres: [
+    { name: 'TitleId', type: 'string', description: 'Title identifier' },
+    { name: 'TitleName', type: 'string', description: 'Game title' },
+    { name: 'Source', type: 'string', description: '"live" or "x360"' },
+    { name: 'Genre', type: 'string', description: 'Genre name' }
   ]
 };
 
@@ -97,7 +124,7 @@ function getCurrentTable(context) {
   const textBefore = text.slice(0, pos);
   
   // Find the last table reference
-  const tableMatch = textBefore.match(/(titles|achievements|stats)[\s\S]*$/);
+  const tableMatch = textBefore.match(/(titles|achievements|stats|ratings|genres)[\s\S]*$/);
   if (tableMatch) {
     const tableName = tableMatch[1];
     // Check if we're after a pipe operator (suggesting columns)

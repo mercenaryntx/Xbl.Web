@@ -10,6 +10,8 @@ using Xbl.Client.Models.Xbl.Achievements;
 using Xbl.Client.Models.Xbl.Player;
 using Xbl.Client.Queries;
 using Xbl.Data;
+using Xbl.Web.Data;
+using Xbl.Web.Models.Kql;
 using System.Collections.Immutable;
 
 namespace Xbl.Web.Controllers;
@@ -22,17 +24,20 @@ public class QueriesController : ControllerBase
     private readonly IDatabaseContext _x360;
     private readonly IMapper _mapper;
     private readonly ILogger<QueriesController> _logger;
+    private readonly IRatingsContext _ratings;
 
     public QueriesController(
         [FromKeyedServices(DataSource.Live)] IDatabaseContext live,
         [FromKeyedServices(DataSource.Xbox360)] IDatabaseContext x360,
         IMapper mapper,
-        ILogger<QueriesController> logger)
+        ILogger<QueriesController> logger,
+        IRatingsContext ratings)
     {
         _live = live.Mandatory();
         _x360 = x360.Mandatory();
         _mapper = mapper;
         _logger = logger;
+        _ratings = ratings;
     }
 
     [HttpGet("built-in/{queryType}")]
@@ -65,6 +70,23 @@ public class QueriesController : ControllerBase
             _logger.LogError(ex, "Error executing built-in query: {QueryType}", queryType);
             return StatusCode(500, new { error = ex.Message });
         }
+    }
+
+    private static KqlTitleRating BuildRatingRow(Title title, string source, Dictionary<string, int> ratingsMap)
+    {
+        var titleId = title.IntId.ToString();
+        // Query Mode shows the same whole-star rating as the rest of the UI (half-star precision
+        // is stored for future use only - see StarRating.js). 0 = not rated.
+        var rating = ratingsMap.TryGetValue(titleId, out var raw) ? (int)Math.Round(raw / 2.0) : 0;
+        return new KqlTitleRating { TitleId = titleId, TitleName = title.Name, Source = source, Rating = rating };
+    }
+
+    private static IEnumerable<KqlTitleGenre> BuildGenreRows(Title title, string source, Dictionary<string, List<Xbl.Web.Models.GenreRef>> genreMap)
+    {
+        var titleId = title.IntId.ToString();
+        if (!genreMap.TryGetValue(titleId, out var genres)) yield break;
+        foreach (var genre in genres)
+            yield return new KqlTitleGenre { TitleId = titleId, TitleName = title.Name, Source = source, Genre = genre.Name };
     }
 
     private object TransformWeightedRarity(IEnumerable<WeightedAchievementItem> items)
@@ -108,6 +130,20 @@ public class QueriesController : ControllerBase
             var liveStats = await _live.GetAll<Stat>();
             var stats = liveStats.Select(_mapper.Map<KqlMinutesPlayed>).ToImmutableArray();
             context.WrapDataIntoTable(DataTable.Stats, stats);
+
+            var liveRatings = await _ratings.GetRatingsMapAsync(DataSource.Live);
+            var x360Ratings = await _ratings.GetRatingsMapAsync(DataSource.Xbox360);
+            var ratingRows = liveTitles.Select(t => BuildRatingRow(t, DataSource.Live, liveRatings))
+                .Concat(x360Titles.Select(t => BuildRatingRow(t, DataSource.Xbox360, x360Ratings)))
+                .ToImmutableArray();
+            context.WrapDataIntoTable("ratings", ratingRows);
+
+            var liveGenres = await _ratings.GetGenreMapAsync(DataSource.Live);
+            var x360Genres = await _ratings.GetGenreMapAsync(DataSource.Xbox360);
+            var genreRows = liveTitles.SelectMany(t => BuildGenreRows(t, DataSource.Live, liveGenres))
+                .Concat(x360Titles.SelectMany(t => BuildGenreRows(t, DataSource.Xbox360, x360Genres)))
+                .ToImmutableArray();
+            context.WrapDataIntoTable("genres", genreRows);
 
             var result = await context.RunQuery(request.Query);
             
